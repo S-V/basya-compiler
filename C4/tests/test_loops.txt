@@ -1,0 +1,134 @@
+	.486
+	.model	flat
+
+includelib MSVCRTD
+includelib OLDNAMES
+
+public	_main
+extrn	__imp__printf : PROC
+extrn	__imp__getchar : PROC
+extrn	__ftol2_sse : PROC
+
+_TEXT segment
+
+_main	proc
+push	ebp
+mov	ebp, esp
+sub	esp, 177
+push	ebx
+push	esi
+push	edi
+L0:
+
+; while a <= b + 34
+                                    mov	eax, dword ptr [b]
+add	eax, 34
+cmp	dword ptr [a], eax
+jg	L1
+
+                                  
+; i = (a > b) - 1;
+mov	eax, dword ptr [a]
+xor	ecx, ecx
+cmp	eax, dword ptr [b]
+setg	cl
+dec	ecx
+mov	dword ptr [i], ecx
+
+; if (cast< char >( c2 )) > (cast< char >( c3 ))
+                     movsx	eax, byte ptr [c2]
+movsx	ecx, byte ptr [c3]
+cmp	eax, ecx
+jle	L2
+
+        
+; i = 8;
+mov	dword ptr [i], 8
+L2:
+
+; if i = (!(a)) + b
+                             xor	eax, eax
+cmp	dword ptr [a], 0
+sete	al
+add	eax, dword ptr [b]
+mov	dword ptr [i], eax
+test	eax, eax
+jne	L3
+
+        
+; a = 8;
+mov	dword ptr [a], 8
+           
+; return a + b;
+mov	eax, dword ptr [a]
+add	eax, dword ptr [b]
+ jmp	L4
+L3:
+
+; if !(a % 9 >= b * 7)
+                                                                mov	eax, dword ptr [a]
+mov	ecx, 9
+cdq
+idiv	ecx
+imul	eax, dword ptr [b], 7
+xor	ecx, ecx
+cmp	edx, eax
+setge	cl
+cmp	ecx, 0
+jne	L5
+
+                 
+; a = i + 1;
+mov	eax, dword ptr [i]
+inc	eax
+mov	dword ptr [a], eax
+L5:
+
+; if a % 9 < b * 7
+                                          mov	eax, dword ptr [a]
+mov	ecx, 9
+cdq
+idiv	ecx
+imul	eax, dword ptr [b], 7
+cmp	edx, eax
+jge	L6
+
+                 
+; a = i + 1;
+mov	eax, dword ptr [i]
+inc	eax
+mov	dword ptr [a], eax
+                                         
+; return a % 9 == b * 7;
+mov	eax, dword ptr [a]
+mov	ecx, 9
+cdq
+idiv	ecx
+imul	eax, dword ptr [b], 7
+xor	ecx, ecx
+cmp	edx, eax
+sete	cl
+mov	eax, ecx
+ jmp	L4
+L6:
+ jmp	L0
+L1:
+                                                       
+; return a << b | c & 9;
+mov	eax, dword ptr [a]
+mov	ecx, dword ptr [b]
+shl	eax, cl
+mov	ecx, dword ptr [c]
+and	ecx, 9
+or	eax, ecx
+L4:
+pop	edi
+pop	esi
+pop	ebx
+mov	esp, ebp
+pop	ebp
+ret	0
+_main	endp
+
+_TEXT ends
+END

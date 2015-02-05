@@ -1,0 +1,161 @@
+	.486
+	.model	flat
+
+includelib MSVCRTD
+includelib OLDNAMES
+
+public	_main
+extrn	__imp__printf : PROC
+extrn	__imp__getchar : PROC
+extrn	__ftol2_sse : PROC
+
+_TEXT segment
+
+_Foo	proc
+push	ebp
+mov	ebp, esp
+sub	esp, 37
+push	ebx
+push	esi
+push	edi
+
+; if (cast< int >( c )) > a + b
+                                      mov	eax, dword ptr [a]
+add	eax, dword ptr [b]
+movsx	ecx, byte ptr [c]
+cmp	ecx, eax
+jle	L0
+
+                                                                                                   
+; u1 = (u2 % u3) * (a + b) << 2;
+mov	eax, dword ptr [u2]
+cdq
+idiv	dword ptr [u3]
+mov	eax, dword ptr [a]
+add	eax, dword ptr [b]
+imul	edx, eax
+shl	edx, 2
+mov	dword ptr [u1], edx
+                                                              
+; u1 = cast< int >( (cast< float >( u1 )) + f * f );
+fld	dword ptr [f]
+fmul	dword ptr [f]
+fild	dword ptr [u1]
+faddp	st(1), st
+call	__ftol2_sse
+mov	dword ptr [u1], eax
+           
+; return u1 + u3;
+mov	eax, dword ptr [u1]
+add	eax, dword ptr [u3]
+ jmp	L1
+L0:
+
+; if ((a + b) + (cast< int >( c )) * 8) + 782 <= (a << b | a & (cast< int >( c )))
+                                                                                                                                                       mov	eax, dword ptr [a]
+add	eax, dword ptr [b]
+movsx	ecx, byte ptr [c]
+lea	esi, [eax + ecx*8 + 782]
+mov	eax, dword ptr [a]
+mov	ecx, dword ptr [b]
+shl	eax, cl
+mov	ecx, dword ptr [a]
+movsx	edi, byte ptr [c]
+and	ecx, edi
+or	eax, ecx
+cmp	esi, eax
+jg	L3
+
+               
+; return (cast< int >( c )) - 1 > a;
+movsx	eax, byte ptr [c]
+dec	eax
+xor	ecx, ecx
+cmp	eax, dword ptr [a]
+setg	cl
+mov	eax, ecx
+ jmp	L1
+L3:
+L2:
+           
+; return a + b;
+mov	eax, dword ptr [a]
+add	eax, dword ptr [b]
+L1:
+pop	edi
+pop	esi
+pop	ebx
+mov	esp, ebp
+pop	ebp
+ret	0
+_Foo	endp
+
+_main	proc
+push	ebp
+mov	ebp, esp
+sub	esp, 99
+push	ebx
+push	esi
+push	edi
+        
+; a = 87;
+mov	dword ptr [a], 87
+        
+; b = 343;
+mov	dword ptr [b], 343
+        
+; c = 33;
+mov	dword ptr [c], 33
+                                          
+; f3 = f3 + f1 / f2;
+fld	dword ptr [f1]
+fdiv	dword ptr [f2]
+fadd	dword ptr [f3]
+fstp	dword ptr [f3]
+   
+; e
+push	dword ptr [e]
+      
+; 7
+push	7
+      
+; 3
+push	3
+   
+; a
+push	dword ptr [a]
+   
+; c
+push	dword ptr [c]
+   
+; i
+push	dword ptr [i]
+   
+; b
+push	dword ptr [b]
+          
+; c1
+movsx	eax, byte ptr [c1]
+push	eax
+                                
+; ua = (Foo(a, 3, 7, e)) % (Foo(c1, b, i, c));
+call	dword ptr _Foo
+add	esp, 16
+mov	ecx, eax
+call	dword ptr _Foo
+add	esp, 16
+mov	esi, eax
+mov	eax, ecx
+cdq
+idiv	esi
+mov	dword ptr [ua], edx
+pop	edi
+pop	esi
+pop	ebx
+mov	esp, ebp
+pop	ebp
+ret	0
+_main	endp
+
+_TEXT ends
+END

@@ -1,0 +1,76 @@
+	.486
+	.model	flat
+
+includelib MSVCRTD
+includelib OLDNAMES
+
+public	_main
+extrn	__imp__printf : PROC
+extrn	__imp__getchar : PROC
+extrn	__ftol2_sse : PROC
+
+_TEXT segment
+_main	proc
+push	ebp
+mov	ebp, esp
+sub	esp, 177
+push	ebx
+push	esi
+push	edi
+            
+; a = b
+mov	eax, dword ptr [b]
+mov	dword ptr [a], eax
+                 
+; (a = b, i = i + 1)
+mov	eax, dword ptr [i]
+inc	eax
+mov	dword ptr [i], eax
+                 
+; ((a = b, i = i + 1), a = 8 * b)
+mov	eax, dword ptr [b]
+shl	eax, 3
+mov	dword ptr [a], eax
+            
+; c = a
+mov	eax, dword ptr [a]
+mov	dword ptr [c], eax
+        
+; (c = a, i = 43)
+mov	dword ptr [i], 43
+                                      
+; ((c = a, i = 43), a = (~b) | 1)
+mov	eax, dword ptr [b]
+not	eax
+or	eax, 1
+mov	dword ptr [a], eax
+                                                                                                                                                                
+; i = ((((a = b, i = i + 1), a = 8 * b), m | b + 3 & 32)) % ((((c = a, i = 43), a = (~b) | 1), b << c >= 8));
+mov	eax, dword ptr [b]
+add	eax, 3
+and	eax, 32
+or	eax, dword ptr [m]
+mov	ecx, dword ptr [b]
+mov	esi, ecx
+mov	ecx, dword ptr [c]
+shl	esi, cl
+xor	ecx, ecx
+cmp	esi, 8
+setge	cl
+cdq
+idiv	ecx
+mov	dword ptr [i], edx
+ 
+; return 0;
+xor	eax, eax
+L0:
+pop	edi
+pop	esi
+pop	ebx
+mov	esp, ebp
+pop	ebp
+ret	0
+_main	endp
+
+_TEXT ends
+END

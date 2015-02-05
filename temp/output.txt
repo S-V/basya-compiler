@@ -1,0 +1,559 @@
+	.486
+	.model	flat
+
+includelib MSVCRTD
+includelib OLDNAMES
+
+public	_main
+extrn	__imp__printf : PROC
+extrn	__imp__getchar : PROC
+extrn	__ftol2_sse : PROC
+
+CONST segment
+L0	dd 040490fdbh	; 3.141593
+L2	dd 040490fdbh	; 3.141593
+L13	db 'a = %d\n', 0h	; "a = %d\n"
+L15	db 'Hee, hoo!\n', 0h	; "Hee, hoo!\n"
+L17	dd 04286ae14h	; 67.339996
+L18	dd 0cdcdcd00h	; -431595520.000000
+L19	dd 0cdcdcd00h	; -431595520.000000
+L20	dd 0cdcdcd00h	; -431595520.000000
+L21	db 'Hello, world!%c, %d%c', 0h	; "Hello, world!%c, %d%c"
+L22	db 'bell!!!%c', 0h	; "bell!!!%c"
+L26	db 'x = %d', 0h	; "x = %d"
+CONST ends
+
+_TEXT segment
+
+_circumf	proc
+push	ebp
+mov	ebp, esp
+sub	esp, 4
+push	ebx
+push	esi
+push	edi
+                                   
+; return cast< int >( (cast< float >( 2 * r )) * 3.14159265358 );
+mov	eax, dword ptr [r]
+shl	eax, 1
+push	eax
+fild	dword ptr [esp]
+add	esp, 4
+fmul	dword ptr L0
+call	__ftol2_sse
+L1:
+pop	edi
+pop	esi
+pop	ebx
+mov	esp, ebp
+pop	ebp
+ret	0
+_circumf	endp
+
+_area	proc
+push	ebp
+mov	ebp, esp
+sub	esp, 4
+push	ebx
+push	esi
+push	edi
+                                                
+; return cast< int >( (cast< float >( r * r )) * 3.14159265358 );
+mov	eax, dword ptr [r]
+imul	eax, dword ptr [r]
+push	eax
+fild	dword ptr [esp]
+add	esp, 4
+fmul	dword ptr L2
+call	__ftol2_sse
+L3:
+pop	edi
+pop	esi
+pop	ebx
+mov	esp, ebp
+pop	ebp
+ret	0
+_area	endp
+
+_Mul	proc
+push	ebp
+mov	ebp, esp
+sub	esp, 8
+push	ebx
+push	esi
+push	edi
+                      
+; return cast< int >( a * b );
+fld	dword ptr [a]
+fmul	dword ptr [b]
+call	__ftol2_sse
+L4:
+pop	edi
+pop	esi
+pop	ebx
+mov	esp, ebp
+pop	ebp
+ret	0
+_Mul	endp
+
+_Div	proc
+push	ebp
+mov	ebp, esp
+sub	esp, 12
+push	ebx
+push	esi
+push	edi
+           
+; return a / b;
+mov	eax, dword ptr [a]
+cdq
+idiv	dword ptr [b]
+L5:
+pop	edi
+pop	esi
+pop	ebx
+mov	esp, ebp
+pop	ebp
+ret	0
+_Div	endp
+
+_conditiontest	proc
+push	ebp
+mov	ebp, esp
+sub	esp, 12
+push	ebx
+push	esi
+push	edi
+
+; if test1 > test2
+            mov	eax, dword ptr [test1]
+cmp	eax, dword ptr [test2]
+jle	L6
+
+            
+; result = test1;
+mov	eax, dword ptr [test1]
+mov	dword ptr [result], eax
+ jmp	L7
+L6:
+
+; if test1 < test2
+            mov	eax, dword ptr [test1]
+cmp	eax, dword ptr [test2]
+jge	L8
+
+            
+; result = test2;
+mov	eax, dword ptr [test2]
+mov	dword ptr [result], eax
+ jmp	L9
+L8:
+        
+; result = 0;
+mov	dword ptr [result], 0
+L9:
+L7:
+   
+; return result;
+mov	eax, dword ptr [result]
+L10:
+pop	edi
+pop	esi
+pop	ebx
+mov	esp, ebp
+pop	ebp
+ret	0
+_conditiontest	endp
+
+_main	proc
+push	ebp
+mov	ebp, esp
+sub	esp, 105
+push	ebx
+push	esi
+push	edi
+        
+; a = 87;
+mov	dword ptr [a], 87
+        
+; b = 343;
+mov	dword ptr [b], 343
+        
+; c = 33;
+mov	dword ptr [c], 33
+L11:
+
+; while a > 0
+            cmp	dword ptr [a], 0
+jle	L12
+
+   
+; a
+push	dword ptr [a]
+ 
+; "a = %d\n"
+push	offset L13
+      
+; printf("a = %d\n", a);
+call	dword ptr __imp__printf
+add	esp, 8
+                                
+; a = a - 6;
+mov	eax, dword ptr [a]
+sub	eax, 6
+mov	dword ptr [a], eax
+
+; if a % 37 > 8
+                                mov	eax, dword ptr [a]
+mov	ecx, 37
+cdq
+idiv	ecx
+cmp	edx, 8
+jle	L14
+
+ 
+; "Hee, hoo!\n"
+push	offset L15
+      
+; printf("Hee, hoo!\n");
+call	dword ptr __imp__printf
+add	esp, 4
+           
+; return a - b;
+mov	eax, dword ptr [a]
+sub	eax, dword ptr [b]
+ jmp	L16
+L14:
+ jmp	L11
+L12:
+               
+; f2 = 67.34
+fld	dword ptr L17
+fstp	dword ptr [f2]
+               
+; (f2 = 67.34, f4 = 4343.)
+fld	dword ptr L18
+fstp	dword ptr [f4]
+                                                            
+; f1 = ((f2 = 67.34, f4 = 4343.), f2 + (34. / f4) * f2);
+fld	dword ptr L19
+fdiv	dword ptr [f4]
+fmul	dword ptr [f2]
+fadd	dword ptr [f2]
+fstp	dword ptr [f1]
+          
+; c3
+movsx	eax, byte ptr [c3]
+push	eax
+                                                    
+; i = cast< int >( f4 * 7. )
+fld	dword ptr [f4]
+fmul	dword ptr L20
+call	__ftol2_sse
+mov	dword ptr [i], eax
+push	eax
+      
+; 'a'
+push	97
+ 
+; "Hello, world!%c, %d%c"
+push	offset L21
+      
+; printf("Hello, world!%c, %d%c", 'a', i = cast< int >( f4 * 7. ), c3);
+call	dword ptr __imp__printf
+add	esp, 16
+          
+; bellChar
+movsx	eax, byte ptr [bellChar]
+push	eax
+ 
+; "bell!!!%c"
+push	offset L22
+      
+; printf("bell!!!%c", bellChar);
+call	dword ptr __imp__printf
+add	esp, 8
+
+; do
+L23:
+   
+; x
+push	dword ptr [x]
+ 
+; "x = %d"
+push	offset L26
+      
+; printf("x = %d", x);
+call	dword ptr __imp__printf
+add	esp, 8
+L24:
+                                                                                             mov	eax, dword ptr [a]
+imul	eax, dword ptr [b]
+sub	eax, dword ptr [c]
+mov	ecx, dword ptr [b]
+shl	eax, cl
+xor	ecx, ecx
+cmp	dword ptr [x], 33
+setle	cl
+and	eax, ecx
+test	eax, eax
+je	L23
+
+L25:
+      
+; getchar();
+call	dword ptr __imp__getchar
+                 
+; i = i + 1
+mov	eax, dword ptr [i]
+inc	eax
+mov	dword ptr [i], eax
+            
+; a = (i = i + 1, b);
+mov	eax, dword ptr [b]
+mov	dword ptr [a], eax
+                 mov	eax, dword ptr [a]
+inc	eax
+mov	dword ptr [a], eax
+                          
+; i = (++a) / c;
+mov	eax, dword ptr [a]
+cdq
+idiv	dword ptr [c]
+mov	dword ptr [i], eax
+                                           
+; b = (i * i) / c
+mov	eax, dword ptr [i]
+imul	eax, dword ptr [i]
+cdq
+idiv	dword ptr [c]
+mov	dword ptr [b], eax
+                                
+; (b = (i * i) / c, a = a + 8)
+mov	eax, dword ptr [a]
+add	eax, 8
+mov	dword ptr [a], eax
+                 mov	eax, dword ptr [i]
+inc	eax
+mov	dword ptr [i], eax
+                          
+; a = 1 / (((b = (i * i) / c, a = a + 8), ++i));
+mov	eax, 1
+cdq
+idiv	dword ptr [i]
+mov	dword ptr [a], eax
+                 mov	eax, dword ptr [a]
+inc	eax
+mov	dword ptr [a], eax
+                 mov	eax, dword ptr [i]
+inc	eax
+mov	dword ptr [i], eax
+                                                              
+; i = (++a) - ub / (++i);
+mov	eax, dword ptr [ub]
+xor	edx, edx
+div	dword ptr [i]
+mov	ecx, dword ptr [a]
+sub	ecx, eax
+mov	dword ptr [i], ecx
+                 mov	eax, dword ptr [a]
+inc	eax
+mov	dword ptr [a], eax
+                 mov	eax, dword ptr [b]
+inc	eax
+mov	dword ptr [b], eax
+                                           
+; i = (++a) >>> (++b) % c;
+mov	eax, dword ptr [b]
+cdq
+idiv	dword ptr [c]
+mov	ecx, edx
+mov	eax, dword ptr [a]
+shr	eax, cl
+mov	dword ptr [i], eax
+
+; if a + b
+                  mov	eax, dword ptr [a]
+add	eax, dword ptr [b]
+test	eax, eax
+jne	L27
+
+                 
+; i = i + 1;
+mov	eax, dword ptr [i]
+inc	eax
+mov	dword ptr [i], eax
+      
+; return -( 1 );
+mov	eax, 1
+neg	eax
+ jmp	L16
+L27:
+
+; if !(a + b)
+                           mov	eax, dword ptr [a]
+add	eax, dword ptr [b]
+cmp	eax, 0
+jne	L29
+
+                          
+; a = b % i;
+mov	eax, dword ptr [b]
+cdq
+idiv	dword ptr [i]
+mov	dword ptr [a], edx
+ jmp	L30
+L29:
+
+; if ~(a)
+           mov	eax, dword ptr [a]
+not	eax
+test	eax, eax
+jne	L31
+
+                          
+; i = a << b;
+mov	eax, dword ptr [a]
+mov	ecx, dword ptr [b]
+shl	eax, cl
+mov	dword ptr [i], eax
+L31:
+L30:
+L28:
+
+; if a > b
+            mov	eax, dword ptr [a]
+cmp	eax, dword ptr [b]
+jle	L32
+
+                 
+; a = a - 1;
+mov	eax, dword ptr [a]
+dec	eax
+mov	dword ptr [a], eax
+           
+; return a - b;
+mov	eax, dword ptr [a]
+sub	eax, dword ptr [b]
+ jmp	L16
+L32:
+   
+; b
+push	dword ptr [b]
+      
+; 9
+push	9
+                              
+; c & 7
+mov	eax, dword ptr [c]
+and	eax, 7
+push	eax
+                        
+; i + b
+mov	eax, dword ptr [i]
+add	eax, dword ptr [b]
+push	eax
+                                
+; i = (printf(i + b, c & 7, 9, b)) % (getchar());
+call	dword ptr __imp__printf
+add	esp, 16
+mov	ecx, eax
+call	dword ptr __imp__getchar
+mov	esi, eax
+mov	eax, ecx
+cdq
+idiv	esi
+mov	dword ptr [i], edx
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
+; i = cast< int >( c2 = cast< char >( uc % a + 13 * f & 1 + (~(a & b | c)) <= (b + 13 * 8 << 21) >>> (((298 % c) % 1) / ua) / ub ) );
+mov	eax, 298
+cdq
+idiv	dword ptr [c]
+mov	eax, edx
+mov	ecx, 1
+cdq
+idiv	ecx
+mov	eax, edx
+xor	edx, edx
+div	dword ptr [ua]
+xor	edx, edx
+div	dword ptr [ub]
+mov	ecx, eax
+mov	eax, dword ptr [b]
+mov	esi, 13
+lea	edi, [esi*8 + eax]
+shl	edi, 21
+shr	edi, cl
+mov	eax, dword ptr [a]
+and	eax, dword ptr [b]
+or	eax, dword ptr [c]
+not	eax
+inc	eax
+xor	ecx, ecx
+cmp	eax, edi
+setle	cl
+mov	eax, dword ptr [uc]
+cdq
+idiv	dword ptr [a]
+imul	eax, dword ptr [f], 13
+add	edx, eax
+and	ecx, edx
+mov	byte ptr [c2], cl
+mov	dword ptr [i], ecx
+            
+; a = b
+mov	eax, dword ptr [b]
+mov	dword ptr [a], eax
+                 
+; (a = b, i = i + 1)
+mov	eax, dword ptr [i]
+inc	eax
+mov	dword ptr [i], eax
+                 
+; ((a = b, i = i + 1), a = 8 * b)
+mov	eax, dword ptr [b]
+shl	eax, 3
+mov	dword ptr [a], eax
+            
+; c = a
+mov	eax, dword ptr [a]
+mov	dword ptr [c], eax
+        
+; (c = a, i = 43)
+mov	dword ptr [i], 43
+                                      
+; ((c = a, i = 43), a = (~(b)) | 1)
+mov	eax, dword ptr [b]
+not	eax
+or	eax, 1
+mov	dword ptr [a], eax
+                                                                                                                                                                
+; i = ((((a = b, i = i + 1), a = 8 * b), m | b + 3 & 32)) % ((((c = a, i = 43), a = (~(b)) | 1), b << c >= 8));
+mov	eax, dword ptr [b]
+add	eax, 3
+and	eax, 32
+or	eax, dword ptr [m]
+mov	ecx, dword ptr [b]
+mov	esi, ecx
+mov	ecx, dword ptr [c]
+shl	esi, cl
+xor	ecx, ecx
+cmp	esi, 8
+setge	cl
+cdq
+idiv	ecx
+mov	dword ptr [i], edx
+ 
+; return 0;
+xor	eax, eax
+L16:
+pop	edi
+pop	esi
+pop	ebx
+mov	esp, ebp
+pop	ebp
+ret	0
+_main	endp
+
+_TEXT ends
+END

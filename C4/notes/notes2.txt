@@ -1,0 +1,378 @@
+temp:
+
+
+i = (i=a) + (i=b);
+
+assign(
+	address_32(i), 
+	add(
+	    assign(address_32(i), indir_i32(address_32(a))), 
+	    assign(address_32(i), indir_i32(address_32(b)))
+	)
+)
+
+Optimal cover for this tree:
+
+
+PROGRAM ABORTED...
+        Couldn't tile the tree with the given patterns!
+
+i = (i=a) + 1;
+assign(
+    address_32(i), 
+	add(
+	   assign(address_32(i), indir_i32(address_32(a))), 
+	   iconst_1(1)))
+
+
+//-----------------------------------------------------------------------------
+2009.01.08
+
+//BUG
+i = ua / 1024; // ua - unsigned, i - int
+
+correct:
+	shr
+
+TODO:
+	i = ua >> ub;	// ub - unsigned
+
+TODO:
+	printf( i + b, c&7, 9, b ) / getchar();  // the result of this computation is discarded
+	
+	do not generate division, emit only 'printf' and 'getchar'
+
+//-----------------------------------------------------------------------------
+2009.01.07.
+ TODO: Remove this crap:
+
+jmp	L0
+L0:
+
+jmp L0
+jmp L1
+
+//-----------------------------------------------------------------------------
+2008.01.04.
+
+	Use the 'xor' keyword instead of '^'.
+
+//-----------------------------------------------------------------------------
+Ideas:
+
+compiler settings:
+	* fold constants
+	* do not compile dead code
+	* transform mul and div by a power of 2 into shifts
+	* use 'lea' for addition / multiplication where appropriate
+	
+	* use graphs instead of trees for codegen ( CSE )
+	merge duplicate strings
+	
+	* expression optimizer ( based on a generated pattern matcher, simpifier,
+	ex.: !(!a || !b) -> (a && b), !(a && b) -> (!a || !b), !(a || b) -> (!a && !b), etc. ),
+	floating-point optimizations ( using FPU instructions ( ex.: fldl2e )
+	and formulae, (sin(x))^2 + (cos(x))^2 -> 1, etc. )
+	
+	
+	// options applied to LLVM / GCC
+	// ... other types of optimizations
+
+
+compiler options:
+	* names of registers in uppercase / lowercase
+	* instructions in uppercase / lowercase
+	* spacing ( how many tabs / whitespaces )
+	* use symbol names or stack offsets ( ex.: [ebp - 4] or [a] )
+	* how names for labels will be generated ( ex.: L_end: , l_1: )
+
+	* emit 16-bit / 32-bit code
+	( because students are taught old 16-bit assembly for DOS )
+
+	* mimic	a novice assembly language programmer ( my crappy back-end )
+			an intermediate
+			an experienced		( use LLVM / GCC )
+
+//-----------------------------------------------------------------------------
+optimization:
+
+ b - 1 + b * 8
+
+	mov		ecx, [b]
+	lea		eax, [eax + eax*8 - 1]
+
+instead of
+	mov		eax, [b]
+	mov		ecx, [b]
+	lea		eax, [ecx + eax*8 - 1]
+	
+//-----------------------------------------------------------------------------
+int i;
+i = i = i;  // meaningless
+//-----------------------------------------------------------------------------
+
+optimization:
+
+	add  ecx, eax
+	mov	 eax, ecx   ; ecx is not needed after this point
+	
+	->
+	
+	add  eax, ecx
+	
+	( "i = 1 / (a / (a / 2 + 2*b) + c*7);" )
+
+example:
+; i = a / (a / 3 + b * 7)
+
+mov     eax, dword ptr [a]
+mov     ecx, 3
+cdq
+idiv    ecx
+imul    ecx, dword ptr [b], 7
+add     eax, ecx					; <- it's better to use "add  ecx, eax"
+mov     ecx, eax					; <- and this 'mov' becomes unnecessary
+mov     eax, dword ptr [a]
+cdq
+idiv    ecx
+mov     dword ptr [i], eax
+
+  ; 11 instructions
+
+Another alternative is to use the lea instruction
+
+
+Peephole:
+imul	esi, eax
+mov		eax, esi
+
+	->
+imul	eax, esi
+
+	etc.
+//-----------------------------------------------------------------------------
+TODO:
+
+; i = b = e = (a + b) + c * 9
+
+mov     eax, dword ptr [a]
+add     eax, dword ptr [b]
+imul    ecx, dword ptr [c], 9
+add     eax, ecx
+mov     dword ptr [e], eax
+mov     dword ptr [b], eax
+mov     dword ptr [i], eax
+
+( 2 registers, 7 instructions )
+
+	reassociate -> i = b = e = ((c * 9) + a) + b
+	
+; i = b = e = (a + b) + c * 9
+
+imul    eax, dword ptr [c], 9
+add     eax, dword ptr [a]
+add     eax, dword ptr [b]
+mov     dword ptr [e], eax
+mov     dword ptr [b], eax
+mov     dword ptr [i], eax
+
+( 1 register, 6 instructions )
+
+//-----------------------------------------------------------------------------
+int  i;
+unsigned int ui;
+char c;
+unsigned char uc;
+
+c = i;
+	mov		eax, dword [i]
+	mov		byte [c], al
+; or
+	mov		al, byte [i]
+	mov		byte [c], al
+
+i = c;
+	movsx	eax, byte [c]
+	mov		dword [i], eax
+
+i = uc;
+	movzx	eax, byte [uc]
+	mov		dword [i], eax
+
+
+//-----------------------------------------------------------------------------
+TODO:
+	remove static methods Type::Get_UInt32, etc.
+	and create a built-in types via 'new'.
+
+TODO:
+	remove some built-in types
+	( the current type system is a mess;
+	Type_UInt32 is the same as Type_Int32 with m_modifiers == UNSIGNED,
+	Type_UInt32 with m_modifiers == SIGNED is an error!
+
+//-----------------------------------------------------------------------------
+
+Create a new method:
+
+	FuncDecl * Parser::ParseFunctionDecl();
+
+//-----------------------------------------------------------------------------
+
+TODO: add more error-checking code
+
+( for example, the following pattern is invalid
+
+  r32 : xdiv( EAX, EAX )
+    "xdiv %c, %0, %1"
+    
+    ...
+)
+
+
+//-----------------------------------------------------------------------------
+
+	TODO:
+
+a = a / b + 2 / (a / b)
+
+Assembler code:
+
+mov eax, [a]    ; r32 : mem, (21)
+cdq
+idiv [b]        ; r32 : div( r32, mr ), (36)
+mov ecx, eax
+mov eax, 2      ; r32 : imm, (20)
+cdq
+idiv ecx        ; r32 : div( r32, mr ), (36)
+mov ecx, eax
+mov eax, [a]    ; r32 : mem, (21)
+cdq
+idiv [b]        ; r32 : div( r32, mr ), (36)
+add ecx, eax    ; r32 : add( r32, mrc ), (25)
+mov [a], ecx    ; rc : assign( addr, rc ), (22)
+
+  transform
+  
+			add ecx, eax
+			mov [a], ecx
+  
+  into
+			add eax, ecx
+			mov [a], eax
+
+//-----------------------------------------------------------------------------
+
+Some functions ( methods ) can only be called once like constructors and destructors.
+
+//-----------------------------------------------------------------------------
+
+TODO: compute usage counts of each symbol in a program
+
+//-----------------------------------------------------------------------------
+
+Idea: use tree matcher for transforming intermediate trees, for example,
+when doing constant folding:
+
+< imm: mul( imm, imm )
+	{ Operand *newOperand = new Immediate( op1->Value() * op2->Value() );
+	  delete op1; delete op2;
+	  $$ = newOperand; }
+>
+
+4 * 5 -> 20
+
+//-----------------------------------------------------------------------------
+
+class Foo [
+
+public:
+			this()
+			{}
+			
+			~this()
+			{}
+
+private:
+	CApp ^	m_pApp;
+
+protected int m_number = 0;
+
+	friend class A, B, C {
+		int  count;	 // this field is accessible to A, B and C
+	}
+]
+
+//-----------------------------------------------------------------------------
+
+Idea:
+
+	if ( cond1 && cond2 )
+		or
+	if ( cond2 && cond1 )
+	
+		generate a faster code using profiling
+
+Idea: use the corresponding machine description
+for checking built-in assembler statements.
+
+//-----------------------------------------------------------------------------
+
+new design of instruction patterns:
+
+[ "idiv32m" // optional name
+	EAX : sdiv( EDX:EAX, mr32 )
+	"idiv %1"
+	<14>
+]
+
+Built-in symbols: mem32, reg32, reg, r32, mem16, imm32, etc.
+
+
+//-----------------------------------------------------------------------------
+
+!!! Free node's children only if this node is an instruction !!!
+
+
+2008.31.02. - everything below is now obsolete!
+
+ '%' and '%%' - ?
+
+
+//-----------------------------------------------------------------------------
+		
+		Examples of instruction patterns
+
+
+[ ASSIGN : %1		// '%1' means that the result of this instruction is the second operand and Assign( $$, $1 ) will be inserted.
+	( mem )			// first operand ( 'memory' )
+	( rc )			// second operand ( 'register or constant' )
+	"mov %0, %1\n"	// assembler template
+	<2>				// cost
+
+					// semantic action
+	{ Move( $0, $1 ); }
+]//ASSIGN( mr, rc )
+
+	Instruction patterns may have operand constraints ( by default, both operands must be of same size:
+
+		?{ $0->Size() == $0->Size() }
+
+
+
+[ MUL : EAX		// 'EAX' or 'eax'
+	( EAX )
+	( imm )
+	!{ clobber: EAX, EDX; set: CF, OF }	// side effects; EAX is optional
+	"imul %0, %0, %1\n"
+	<2>
+]
+
+
+//-----------------------------------------------------------------------------
+
+A rule consists of a condition and an associated action that is automatically executed when
+the condition evaluates to true.
+
+
+stmt:	ASSIGN_INT( addr, ADDI( mem, const_1 ) )	"inc %1"  <{ memop( %0 ); }>	{ TODO: }

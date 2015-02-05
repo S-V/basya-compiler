@@ -1,0 +1,324 @@
+int a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q;
+
+a = 3 + e/5 * c * h - h * b * a + 56 % ( e/5 * c * h );
+
+  mov         eax,dword ptr [e] 
+  cdq              
+  mov         ecx,5 
+  idiv        eax,ecx 
+  mov         ecx,eax 
+  imul        ecx,dword ptr [c] 
+  imul        ecx,dword ptr [h] 
+  add         ecx,3 
+  mov         edx,dword ptr [h] 
+  imul        edx,dword ptr [b] 
+  imul        edx,dword ptr [a] 
+  sub         ecx,edx 
+  mov         eax,dword ptr [e] 
+  cdq              
+  mov         esi,5 
+  idiv        eax,esi 
+  mov         esi,eax 
+  imul        esi,dword ptr [c] 
+  imul        esi,dword ptr [h] 
+  mov         eax,38h 
+  cdq              
+  idiv        eax,esi 
+  add         ecx,edx 
+  mov         dword ptr [a],ecx 
+  
+  
+  
+  
+  
+  	a = 77 / c / h / 3;
+  mov         eax,4Dh 
+  cdq              
+  idiv        eax,dword ptr [c] 
+  cdq              
+  idiv        eax,dword ptr [h] 
+  cdq              
+  mov         ecx,3 
+  idiv        eax,ecx 
+  mov         dword ptr [a],eax 
+  
+  
+  
+  
+  	a = e / 5 + h / 3;
+  mov         eax,dword ptr [e] 
+  cdq              
+  mov         ecx,5 
+  idiv        eax,ecx 
+  mov         ecx,eax 
+  mov         eax,dword ptr [h] 
+  cdq              
+  mov         esi,3 
+  idiv        eax,esi 
+  add         ecx,eax 
+  mov         dword ptr [a],ecx 
+
+
+
+	a = 3 + e/5 * c * h - h * b * a + 56 / ( e/5 * c * h );
+  mov         eax,dword ptr [e] 
+  cdq              
+  mov         ecx,5 
+  idiv        eax,ecx 
+  mov         ecx,eax 
+  imul        ecx,dword ptr [c] 
+  imul        ecx,dword ptr [h] 
+  add         ecx,3 
+  mov         edx,dword ptr [h] 
+  imul        edx,dword ptr [b] 
+  imul        edx,dword ptr [a] 
+  sub         ecx,edx 
+  mov         eax,dword ptr [e] 
+  cdq              
+  mov         esi,5 
+  idiv        eax,esi 
+  mov         esi,eax 
+  imul        esi,dword ptr [c] 
+  imul        esi,dword ptr [h] 
+  mov         eax,38h 
+  cdq              
+  idiv        eax,esi 
+  add         ecx,eax 
+  mov         dword ptr [a],ecx 
+  
+  
+  	a = 3 + e / 5 * c * h - h * b * a + 56 / ( e / 7 * c * 77 / h );
+  mov         eax,dword ptr [e] 
+  cdq              
+  mov         ecx,5 
+  idiv        eax,ecx 
+  mov         ecx,eax 
+  imul        ecx,dword ptr [c] 
+  imul        ecx,dword ptr [h] 
+  add         ecx,3 
+  mov         edx,dword ptr [h] 
+  imul        edx,dword ptr [b] 
+  imul        edx,dword ptr [a] 
+  sub         ecx,edx 
+  mov         eax,dword ptr [e] 
+  cdq              
+  mov         esi,7 
+  idiv        eax,esi 
+  imul        eax,dword ptr [c] 
+  imul        eax,eax,4Dh 
+  cdq              
+  idiv        eax,dword ptr [h] 
+  mov         esi,eax 
+  mov         eax,38h 
+  cdq              
+  idiv        eax,esi 
+  add         ecx,eax 
+  mov         dword ptr [a],ecx 
+  
+  
+  	 a = ( b + 1 + c * 3 * c * 7 + a ) * ( b + 1 + c * 3 * c * 7 + a ) * 99;
+  mov         eax,dword ptr [c] 
+  imul        eax,eax,3 
+  imul        eax,dword ptr [c] 
+  imul        eax,eax,7 
+  add         eax,dword ptr [a] 
+  mov         ecx,dword ptr [b] 
+  lea         edx,[ecx+eax+1] 
+  mov         eax,dword ptr [c] 
+  imul        eax,eax,3 
+  imul        eax,dword ptr [c] 
+  imul        eax,eax,7 
+  add         eax,dword ptr [a] 
+  mov         ecx,dword ptr [b] 
+  lea         eax,[ecx+eax+1] 
+  imul        edx,eax 
+  imul        edx,edx,63h 
+  mov         dword ptr [a],edx 
+
+
+a = 4 + 3 / ( a + b / 3 + 3 / g / h );
+  mov         eax,dword ptr [b] 
+  cdq              
+  mov         ecx,3 
+  idiv        eax,ecx 
+  mov         ecx,eax 
+  add         ecx,dword ptr [a] 
+  mov         eax,3 
+  cdq              
+  idiv        eax,dword ptr [g] 
+  cdq              
+  idiv        eax,dword ptr [h] 
+  add         ecx,eax 
+  mov         eax,3 
+  cdq              
+  idiv        eax,ecx 
+  add         eax,4 
+  mov         dword ptr [a],eax 
+  
+  
+//-------------------------------------------------------------------
+  
+  ( my tests )
+  
+  int a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q;
+  
+  i = 1 / (a + 8*j + 1) / (h*i);
+  
+  
+  Optimal cover for this tree:
+
+stmt : rc / '(null)'
+ rc : assign( addr, rc ) / 'mov %0, %1'
+  addr : address / 'dword ptr [%0]'
+  rc : r32 / '%0'
+   r32 : div( r32, mr ) / 'cdq
+							idiv %1'
+    r32 : div( r32, mr ) / 'cdq
+							idiv %1'
+     r32 : imm / 'mov %c, %0'
+      imm : iconst_1 / '%0'
+     mr : r32 / '%0'
+      r32 : add( add, imm ) / 'lea %c, [%2 + %0*%1 + %3]'
+       r32 : mem / 'mov %c, %0'
+        mem : indir_i32( address ) / 'dword ptr [%0]'
+       iconst_2_4_8 : iconst_8 / '8'
+       r32 : mem / 'mov %c, %0'
+        mem : indir_i32( address ) / 'dword ptr [%0]'
+       imm : iconst_1 / '%0'
+    mr : r32 / '%0'
+     r32 : mul( r32, mrc ) / 'imul %0, %1'
+      r32 : mem / 'mov %c, %0'
+       mem : indir_i32( address ) / 'dword ptr [%0]'
+      mrc : mem / '%0'
+       mem : indir_i32( address ) / 'dword ptr [%0]'
+
+
+Assembler templates selected for this tree:
+
+mov %c, %0      ; r32 : imm , [ 1 ] (20)
+mov %c, %0      ; r32 : mem , [ j ] (21)
+mov %c, %0      ; r32 : mem , [ a ] (21)
+lea %c, [%2 + %0*%1 + %3]       ; r32 : add( add, imm ) , [ add(%%3, %%4) ] (29)
+
+cdq
+idiv %1			; r32 : div( r32, mr ) , [ div(%%0, %%5) ] (36)
+mov %c, %0      ; r32 : mem , [ h ] (21)
+imul %0, %1     ; r32 : mul( r32, mrc ) , [ mul(h, i) ] (34)
+cdq
+idiv %1			; r32 : div( r32, mr ) , [ div(%%6, %%7) ] (36)
+mov %0, %1      ; rc : assign( addr, rc ) , [ assign(i, %%8) ] (22)
+
+
+
+					mov     reg32, dword ptr [j]
+					mov     reg32, dword ptr [a]
+					lea     reg32, [reg32 + reg32*8 + 1]
+					mov     eax, 1
+					cdq
+					idiv    reg32
+					mov     reg32, dword ptr [h]
+					imul    reg32, dword ptr [i]
+					cdq
+					idiv    reg32
+					mov     dword ptr [i], reg32
+
+
+ 8B 45 D8         	mov         eax,dword ptr [j] 
+ 8B 4D FC         	mov         ecx,dword ptr [a] 
+ 8D 4C C1 01      	lea         ecx,[ecx+eax*8+1] 
+ B8 01 00 00 00   	mov         eax,1 
+ 99               	cdq              
+ F7 F9            	idiv        ecx 
+ 8B 4D E0         	mov         ecx,dword ptr [h] 
+ 0F AF 4D DC      	imul        ecx,dword ptr [i] 
+ 99               	cdq              
+ F7 F9            	idiv        ecx 
+ 89 45 DC         	mov         dword ptr [i],eax 
+ 
+ //-------------------------------------------------------------------
+ 
+ a = d / (c * 7);
+ 
+ Optimal cover for this tree:
+
+stmt : rc / '(null)'
+ rc : assign( addr, rc ) / 'mov %0, %1'
+  addr : address / 'dword ptr [%0]'
+  rc : r32 / '%0'
+   r32 : div( r32, mr ) / 'cdq
+							idiv %1'
+    r32 : mem / 'mov %c, %0'
+     mem : indir_i32( address ) / 'dword ptr [%0]'
+    mr : r32 / '%0'
+     r32 : mul( mem, imm ) / 'imul %c, %0, %1'
+      mem : indir_i32( address ) / 'dword ptr [%0]'
+      imm : iconst / '%0'
+
+
+Assembler templates selected for this tree:
+
+mov %c, %0      ; r32 : mem , [ d ] (21)
+imul %c, %0, %1 ; r32 : mul( mem, imm ) , [ mul(c, 7) ] (35)
+cdq
+idiv %1			; r32 : div( r32, mr ) , [ div(d, %%0) ] (36)
+mov %0, %1      ; rc : assign( addr, rc ) , [ assign(a, %%1) ] (22)
+
+
+	imul    reg32, dword ptr [c], 7
+	mov     eax, dword ptr [d]
+	cdq
+	idiv    reg32
+	mov     dword ptr [a], reg32
+
+
+	imul    ecx, dword ptr [c], 7
+	mov     eax, dword ptr [d]
+	cdq
+	idiv    ecx
+	mov     dword ptr [a], eax
+	
+//-------------------------------------------------------------------
+
+ C8 2B 5F 49      enter       5F2Bh,49h 
+ 00 00            add         byte ptr [eax],al 
+ 00 00            add         byte ptr [eax],al 
+ 02 00            add         al,byte ptr [eax] 
+ 00 00            add         byte ptr [eax],al 
+ 6C               ins         byte ptr es:[edi],dx 
+ 00 00            add         byte ptr [eax],al 
+ 00 18            add         byte ptr [eax],bl 
+ 7D 03            jge         ___xt_z+11Eh (435B5Ah) 
+ 00 18            add         byte ptr [eax],bl 
+ 6D               ins         dword ptr es:[edi],dx 
+ 02 00            add         al,byte ptr [eax] 
+string "i = %d\n":
+ 69 20 3D 20 25 64 imul        esp,dword ptr [eax],6425203Dh 
+ 0A 00            or          al,byte ptr [eax] 
+__real@44424000:
+ 00 40 42         add         byte ptr [eax+42h],al 
+ 44               inc         esp  
+string "i2 = %d\n":
+ 69 32 20 3D 20 25 imul        esi,dword ptr [edx],25203D20h 
+ 64 0A 00         or          al,byte ptr fs:[eax] 
+ 00 00            add         byte ptr [eax],al 
+ 00 55 25         add         byte ptr [ebp+25h],dl 
+ 41               inc         ecx  
+ 00 93 23 41 00 93 add         byte ptr [ebx-6CFFBEDDh],dl 
+ 23 41 00         and         eax,dword ptr [ecx] 
+ 00 00            add         byte ptr [eax],al 
+ 00 00            add         byte ptr [eax],al 
+string L"(null)":
+ 28 00            sub         byte ptr [eax],al 
+ 6E               outs        dx,byte ptr [esi] 
+ 00 75 00         add         byte ptr [ebp],dh 
+ 6C               ins         byte ptr es:[edi],dx 
+ 00 6C 00 29      add         byte ptr [eax+eax+29h],ch 
+ 00 00            add         byte ptr [eax],al 
+ 00 00            add         byte ptr [eax],al 
+ 00 28            add         byte ptr [eax],ch 
+ 6E               outs        dx,byte ptr [esi] 
+ 75 6C            jne         ___lookuptable+54h (435C04h) 
+ 6C               ins         byte ptr es:[edi],dx 
+ 29 00            sub         dword ptr [eax],eax 
+ 
+ //-------------------------------------------------------------------

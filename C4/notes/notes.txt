@@ -1,0 +1,272 @@
+//-------------------------------------
+Option:
+	how constants should be represented ( Hex or Dec )
+	
+	mov		ecx, 0Ah
+		or
+	mov		ecx, 10
+
+//-------------------------------------
+Idea:
+	selecting different styles of generating assembly listing
+	( whether or not register names will start with a capital letter ( "EAX" or "eax" ), etc.,
+	how static string data should be organized, how labels should be named, source comments, etc. )
+	
+//-------------------------------------
+
+Optimization:
+
+int a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q;
+
+a*(b*c)+(b*a)*d+a*e -> (a*b)*(c+d)+a*e -> a*(b*(c+d)+e)
+
+	i = a*(b*c)+(b*a)*d+a*e;
+ 8B 45 F8         mov         eax,dword ptr [b] 
+ 0F AF 45 F4      imul        eax,dword ptr [c] 
+ 0F AF 45 FC      imul        eax,dword ptr [a] 
+ 8B 4D F8         mov         ecx,dword ptr [b] 
+ 0F AF 4D FC      imul        ecx,dword ptr [a] 
+ 0F AF 4D F0      imul        ecx,dword ptr [d] 
+ 03 C1            add         eax,ecx 
+ 8B 55 FC         mov         edx,dword ptr [a] 
+ 0F AF 55 EC      imul        edx,dword ptr [e] 
+ 03 C2            add         eax,edx 
+ 89 45 DC         mov         dword ptr [i],eax 
+( 11 )
+
+	i = a*(b*(c+d)+e);
+ 8B 45 F4         mov         eax,dword ptr [c] 
+ 03 45 F0         add         eax,dword ptr [d] 
+ 0F AF 45 F8      imul        eax,dword ptr [b] 
+ 03 45 EC         add         eax,dword ptr [e] 
+ 0F AF 45 FC      imul        eax,dword ptr [a] 
+ 89 45 DC         mov         dword ptr [i],eax 
+( 6 )
+//-------------------------------------
+
+Optimization:
+
+{
+	if ( ! reg.IsFree() ) 
+	{
+		GenerateReload( reg );
+		reg->SetUsed();
+	}
+	else {
+		reg->SetUsed();
+	}
+}
+
+	is the same as
+
+{
+	if ( ! reg.IsFree() ) 
+	{
+		GenerateReload( reg );		
+	}
+	reg->SetUsed();
+}
+
+//-------------------------------------
+
+newOperand = new InsnOperand( insn, rulenum ); // OK
+
+/*newOperand = */new InsnOperand( insn, rulenum ); // ERROR: result of expression is not used
+
+//-------------------------------------
+
+Idea:
+	enum { MAX_NUM_OPERANDS = 1000 };
+	
+static assert( MAX_NUM_OPERANDS > 0 );
+static if ( MAX_NUM_OPERANDS < 256 ) {
+	typedef int8	OpNum;
+} else if ( MAX_NUM_OPERANDS < MAX_SHORT ) {
+	typedef int16	OpNum;
+} else if ( MAX_NUM_OPERANDS < MAX_INT ) {
+	typedef int32	OpNum;
+}
+
+class Instruction {
+	Operand *	m_operands[ MAX_NUM_OPERANDS ];
+	OpNum		m_numOperands;
+//...
+
+//-------------------------------------
+
+optimization:
+	
+	a++;
+	a += 7;
+	
+	is transformed into a += 8;
+	
+	"add  [a], 8"
+	
+//--------------------------------
+	function EmitNode
+
+	EmitNode for all children
+	
+	Save initial names of m_operands ( %0, %1, ... )
+	
+	Execute semantic actions
+	Allocate registers
+	Get the name for the result "%c"
+	Emit assembler template ( properly inserting names )
+	
+
+//--------------------------------
+Idea:
+	test bench for testing and debugging separate modules, classes, functions, etc..
+
+//--------------------------------
+language-specific optimizations:
+
+switch ( insn->opcode ) {
+	case add:
+		if ( insn->opcode == add && ... ) {
+			// ...
+		}
+		// ...
+}
+
+//--------------------------------
+
+ICode_t		m_convTable[ NUM_OF_TYPES ][ NUM_OF_TYPES ];
+
+for ( int i = 0; i < NUM_OF_TYPES; i++ ) {
+		for ( int j = 0; j < NUM_OF_TYPES; j++ ) {
+			m_convTable[i][j] = OPCODE_ERROR;
+		}
+	}
+
+	m_convTable[ CHAR ][ CHAR ]			= OPCODE_ERROR;	// redundant instruction
+	m_convTable[ CHAR ][ TYPE_INT8 ]	= TYPE_INT8;
+	
+
+//=================================================================================
+16.11.2008.
+//=================================================================================
+Idea: make a built-in disassembler - enter some machine codes in a special dialog window and get the corresponding
+assembler instructions.
+
+//=================================================================================
+07.11.2008.
+	TODO: Machine_x86::_ExecuteAction
+
+//=================================================================================
+2006.
+Notes on a future interpreter/*compiler*/ and IDE.
+1) Nearly all of the windows will be semitransparent 
+( transparency can be changed ).
+2) The future compiler will be written in VC++.
+//3) It'll be a compiler for a script language.
+3) It'll be an interpreter ( or, maybe, you'll be able to interpret the program
+( in debugging mode ) and then compile ).
+4) The user will be able to create his own code snippets and templates
+( insertion places will be adjusted automatically ).
+5) Syntax checking
+6) Intellisense
+7) Switch to Turbo Pascal's IDE ( modern )
+8) Some useful features as in Free Pascal's IDE
+9) Instead of traditional identifiers, users can insert bitmaps, flow-charts
+and draw in the code
+10) The IDE's obstrusiness can be adjusted
+11) It'll probably be an interpreter
+12) Built using MFC and DirectX
+13) Files with code will have the extension ".ivt"
+14) Mixture of Java, C++, Pascal and Basic
+15) Comments:
+//
+(*
+/*
+[[
+16) nested functions supported
+17) files with code cannot be opened ( read ) outside the IDE
+18) IDE will do smart formatting and you'll choose style of formatting your code
+( dialog window with options:
+Microsoft
+Id Software
+...
+none
+
+19) when writing 
+out << 
+the hints will appear
+20) you can overload operators and bitmap symbols as you wish.
+
+21) each bitmap will have its id ( 256-bit depth colour, arbitrary shape )
+22) you can select text arbitrary  
+
+23)
+
+this->method   ========  .method
+
+24) There will be elif operator
+
+if ...
+elif
+elif
+
+else if
+
+elif
+
+else
+...
+
+25) class Sclass1 {
+	int a, b, c;
+void func_1( void );
+}
+
+Sclass..void func_1( void ) {
+	.a = 4;
+	.c = .b = .a;
+}
+
+period . instead of this->
+
+26) ret instead of return ?
+
+27) there will probably be types, not classes:
+type Sclass1 {
+ ...
+}
+
+type SMyInteger is int   - now SMyInteger is the same as int
+
+
+28) Preprocessor:
+#macro  ERROR( str, file )   MessageBoxEx( ...     /
+			... /
+			...
+
+29) Templates:
+pattern< type T >
+type  TMyType1 {
+T  a;
+...
+
+int  MyFunc( int a, int b );
+}
+
+TMyType1..int  MyFunc( int a, int b ) {
+}
+
+30) Curly braces will be highlighted and matched when the cursor flies
+over them
+
+31) Warning:  if( A = b ) { ...
+
+32) A cool debugger will be integrated into the IDE.
+
+33) There will be learning mode, when hints and half-transparent dialog
+based hints will appear over keywords ( with examples and so forth ).
+
+34) There'll be no switch-fallthrough.
+														2006.
+
+
+

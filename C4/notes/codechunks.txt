@@ -1,0 +1,5141 @@
+; a = 3 + e / 5 * c * h - h * b * a + 56 % ( e / 5 * c * h );
+[ '/',	 e,		 5,		 $1 ]
+[ '*',	 $1,		 c,		 $2 ]
+[ '*',	 $2,		 h,		 $3 ]
+[ '%',	 56,		 $3,		 $4 ]
+[ '*',	 h,		 b,		 $5 ]
+[ '*',	 $5,		 a,		 $6 ]
+[ '/',	 e,		 5,		 $7 ]
+[ '*',	 $7,		 c,		 $8 ]
+[ '*',	 $8,		 h,		 $9 ]
+[ '+',	 3,		 $9,		 $10 ]
+[ '-',	 $10,		 $6,		 $11 ]
+[ '+',	 $11,		 $4,		 $12 ]
+[ '=',	 a,		 $12,		 $13 ]
+							[ c4::Div_MEM_IMM ]
+mov		eax, dword ptr [e]
+cdq
+mov		ecx, 5
+idiv	ecx
+							[ c4::Mul_REG_MEM ]
+imul	eax, dword ptr [c]
+							[ c4::Mul_REG_MEM ]
+imul	eax, dword ptr [h]
+							[ c4::Mod_IMM_REG ]
+
+mov		ecx, eax			; ecx = e / 5 * c * h
+mov		eax, 56
+cdq
+idiv	ecx					; edx = 56 % (e / 5 * c * h)
+
+							[ c4::Mul_MEM_MEM ]
+mov		eax, dword ptr [h]
+imul	eax, dword ptr [b]
+							[ c4::Mul_REG_MEM ]
+imul	eax, dword ptr [a]
+; $6 == eax = h * b * a
+							[ c4::Div_MEM_IMM ]
+							
+mov		esi, eax			; esi = h * b * a = $6
+mov		eax, dword ptr [e]
+cdq
+mov		edi, 5
+idiv	edi
+							[ c4::Mul_REG_MEM ]
+imul	eax, dword ptr [c]
+							[ c4::Mul_REG_MEM ]
+imul	eax, dword ptr [h]	; eax = e / 5 * c * h
+							[ c4::Add_IMM_REG ]
+add		eax, 3				; eax = 3 + e / 5 * c * h
+							[ c4::Sub_REG_REG ]
+sub		eax, eax
+							[ c4::Add_REG_REG ]
+add		eax, edx
+							[ c4::Assign_MEM_REG ]
+mov		dword ptr [a], eax
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class Machine_i386 : public ASTVisitor {
+public:
+				Machine_i386();
+				~Machine_i386();
+
+	void		Init();
+	void		Shutdown();
+
+	void		Emit_Comment( const char* format, ... );
+	void		Emit_Alignment( uint count );
+	
+	void		Emit_DataSection();
+
+	void		Emit_Byte( byte value );
+	void		Emit_Word( word value );
+	void		Emit_DWord( dword value );
+	void		Emit_QWord( qword value );
+	void		Emit_Float( f32 value );
+	void		Emit_Double( f64 value );
+	void		Emit_String( const char* format, ... );
+
+	void		Emit_Label( const char* name );
+	void		Emit_NewLine();
+
+#pragma region Overrides
+
+	virtual void	Visit( CompilationUnit * compUnit );
+	virtual void	Visit( Declaration * decl );
+	virtual void	Visit( DeclarationList * );
+	virtual void	Visit( VarDecl * );
+	virtual void	Visit( Argument * );
+	virtual void	Visit( ArgumentList * );
+	virtual void	Visit( FunctionDecl * functionDecl );
+	virtual void	Visit( ClassDecl * );
+	virtual void	Visit( StructDecl * );
+	virtual void	Visit( EnumDecl * );
+	virtual void	Visit( NamespaceDecl * );
+	virtual void	Visit( Statement * stmt );
+	virtual void	Visit( EmptyStatement * );
+	virtual void	Visit( ErrorStatement * );
+	virtual void	Visit( StatementList * );
+	virtual void	Visit( ExpressionStatement * expStmt );
+	virtual void	Visit( LabeledStatement * );
+	virtual void	Visit( DeclStatement * );
+	virtual void	Visit( Block * block ) ;
+	virtual void	Visit( AutoDeclStatement * );
+	virtual void	Visit( IfStatement * ifStmt ) ;
+	virtual void	Visit( LoopStatement * );
+	virtual void	Visit( WhileStatement * whileStmt );
+	virtual void	Visit( DoStatement * doStmt );
+	virtual void	Visit( WithStatement * );
+	virtual void	Visit( ReturnStatement * returnStmt ) ;
+	virtual void	Visit( ForLoopStatement * );
+	virtual void	Visit( CaseStatement * );
+	virtual void	Visit( DefaultStatement * );
+	virtual void	Visit( ContinueStatement * );
+	virtual void	Visit( BreakStatement * );
+	
+	virtual void	Visit( Expression * );
+	virtual void	Visit( ExpressionList * );
+	virtual void	Visit( BooleanConstant * );
+	virtual void	Visit( IntegerConstant * );
+	virtual void	Visit( FloatingConstant * );
+	virtual void	Visit( CharConstant * );
+	virtual void	Visit( IdExp * );
+	virtual void	Visit( Identifier * );
+	virtual void	Visit( UnaryExpression * );
+	virtual void	Visit( BinaryExpression * );
+	virtual void	Visit( AssertExpression * );
+	virtual void	Visit( AddrOfExp * );
+	virtual void	Visit( ArrayAccessExp * );
+	virtual void	Visit( PtrIndirectionExp * );
+	virtual void	Visit( DotExp * );
+	virtual void	Visit( CastExp * );
+	virtual void	Visit( NegationExp * );
+	virtual void	Visit( UnaryPlusExp * );
+	virtual void	Visit( PreIncExp * );
+	virtual void	Visit( PreDecExp * );
+	virtual void	Visit( PostIncExp * );
+	virtual void	Visit( PostDecExp * );
+	virtual void	Visit( ComplExp * );
+	virtual void	Visit( NotExp * );
+	virtual void	Visit( CommaExpression * );
+	virtual void	Visit( AssignmentExp * );
+	virtual void	Visit( AddExp * );
+	virtual void	Visit( SubExp * );
+	virtual void	Visit( MulExp * );
+	virtual void	Visit( DivExp * );
+	virtual void	Visit( ModExp * );
+	virtual void	Visit( ShlExp * );
+	virtual void	Visit( ShrExp * );
+	virtual void	Visit( UShrExp * );
+	virtual void	Visit( XorExp * );
+	virtual void	Visit( OrOrExp * );
+	virtual void	Visit( InExp * );
+	virtual void	Visit( CondExp * );
+	virtual void	Visit( EquExp * );
+	virtual void	Visit( RelExp * );
+	virtual void	Visit( BitAndExp * );
+	virtual void	Visit( BitXorExp * );
+	virtual void	Visit( BitOrExp * );
+	virtual void	Visit( AddAssignExp * );
+	virtual void	Visit( SubAssignExp * );
+	virtual void	Visit( MulAssignExp * );
+	virtual void	Visit( DivAssignExp * );
+	virtual void	Visit( ModAssignExp * );
+	virtual void	Visit( BitAndAssignExp * );
+	virtual void	Visit( BitXorAssignExp * );
+	virtual void	Visit( BitOrAssignExp * );
+	virtual void	Visit( ShlAssignExp * );
+	virtual void	Visit( ShrAssignExp * );
+	virtual void	Visit( UShrAssignExp * );
+	virtual void	Visit( CallExp * );
+	virtual void	Visit( ErroneousExpression * );
+	virtual void	Visit( ThisExpression * );
+
+	virtual void	Visit( AST_Node * );
+
+#pragma endregion
+
+protected:
+	int		StackVarDeclaration( VarDecl * decl );
+
+	bool	m_inMain;		// true if we're compiling 'main'
+	uint	m_localsDepth;	// the depth in bytes of the locals
+};
+
+
+
+
+
+
+
+void Machine_i386::Visit( CompilationUnit * compUnit ) {
+	c4::common->Print( "--- generating a compilation unit." );
+
+
+}
+
+void Machine_i386::Visit( Declaration * decl )
+{
+}
+void Machine_i386::Visit( DeclarationList * ) { }
+void Machine_i386::Visit( VarDecl * ) { }
+void Machine_i386::Visit( Argument * ) { }
+void Machine_i386::Visit( ArgumentList * ) { }
+void Machine_i386::Visit( FunctionDecl * functionDecl ) { 
+}
+void Machine_i386::Visit( ClassDecl * ) { }
+void Machine_i386::Visit( StructDecl * ) { }
+void Machine_i386::Visit( EnumDecl * ) { }
+void Machine_i386::Visit( NamespaceDecl * ) { }
+void Machine_i386::Visit( Statement * stmt ) {
+}
+void Machine_i386::Visit( EmptyStatement * ) { }
+void Machine_i386::Visit( ErrorStatement * ) { }
+void Machine_i386::Visit( StatementList * ) { }
+void Machine_i386::Visit( ExpressionStatement * expStmt ) {
+}
+void Machine_i386::Visit( LabeledStatement * ) { }
+void Machine_i386::Visit( DeclStatement * ) { }
+void Machine_i386::Visit( Block * block ) 
+{
+}
+void Machine_i386::Visit( AutoDeclStatement * ) { }
+void Machine_i386::Visit( IfStatement * ifStmt ) 
+{
+}
+void Machine_i386::Visit( LoopStatement * ) { }
+void Machine_i386::Visit( WhileStatement * whileStmt ) { 
+}
+void Machine_i386::Visit( DoStatement * doStmt ) {
+}
+void Machine_i386::Visit( WithStatement * ) { }
+void Machine_i386::Visit( ReturnStatement * returnStmt ) { 
+}
+void Machine_i386::Visit( ForLoopStatement * ) { }
+void Machine_i386::Visit( CaseStatement * ) { }
+void Machine_i386::Visit( DefaultStatement * ) { }
+void Machine_i386::Visit( ContinueStatement * ) { }
+void Machine_i386::Visit( BreakStatement * ) { }
+void Machine_i386::Visit( Expression * ) { }
+void Machine_i386::Visit( ExpressionList * ) { }
+void Machine_i386::Visit( BooleanConstant * ) { }
+void Machine_i386::Visit( IntegerConstant * ) { }
+void Machine_i386::Visit( FloatingConstant * ) { }
+void Machine_i386::Visit( CharConstant * ) { }
+void Machine_i386::Visit( IdExp * ) { }
+void Machine_i386::Visit( Identifier * ) { }
+void Machine_i386::Visit( UnaryExpression * ) { }
+void Machine_i386::Visit( BinaryExpression * ) { }
+void Machine_i386::Visit( AssertExpression * ) { }
+void Machine_i386::Visit( AddrOfExp * ) { }
+void Machine_i386::Visit( ArrayAccessExp * ) { }
+void Machine_i386::Visit( PtrIndirectionExp * ) { }
+void Machine_i386::Visit( DotExp * ) { }
+void Machine_i386::Visit( CastExp * ) { }
+void Machine_i386::Visit( NegationExp * ) { }
+void Machine_i386::Visit( UnaryPlusExp * ) { }
+void Machine_i386::Visit( PreIncExp * ) { }
+void Machine_i386::Visit( PreDecExp * ) { }
+void Machine_i386::Visit( PostIncExp * ) { }
+void Machine_i386::Visit( PostDecExp * ) { }
+void Machine_i386::Visit( ComplExp * ) { }
+void Machine_i386::Visit( NotExp * ) { }
+void Machine_i386::Visit( CommaExpression * ) { }
+void Machine_i386::Visit( AssignmentExp * ) { }
+void Machine_i386::Visit( AddExp * ) { }
+void Machine_i386::Visit( SubExp * ) { }
+void Machine_i386::Visit( MulExp * ) { }
+void Machine_i386::Visit( DivExp * ) { }
+void Machine_i386::Visit( ModExp * ) { }
+void Machine_i386::Visit( ShlExp * ) { }
+void Machine_i386::Visit( ShrExp * ) { }
+void Machine_i386::Visit( UShrExp * ) { }
+void Machine_i386::Visit( XorExp * ) { }
+void Machine_i386::Visit( OrOrExp * ) { }
+void Machine_i386::Visit( InExp * ) { }
+void Machine_i386::Visit( CondExp * ) { }
+void Machine_i386::Visit( EquExp * ) { }
+void Machine_i386::Visit( RelExp * ) { }
+void Machine_i386::Visit( BitAndExp * ) { }
+void Machine_i386::Visit( BitXorExp * ) { }
+void Machine_i386::Visit( BitOrExp * ) { }
+void Machine_i386::Visit( AddAssignExp * ) { }
+void Machine_i386::Visit( SubAssignExp * ) { }
+void Machine_i386::Visit( MulAssignExp * ) { }
+void Machine_i386::Visit( DivAssignExp * ) { }
+void Machine_i386::Visit( ModAssignExp * ) { }
+void Machine_i386::Visit( BitAndAssignExp * ) { }
+void Machine_i386::Visit( BitXorAssignExp * ) { }
+void Machine_i386::Visit( BitOrAssignExp * ) { }
+void Machine_i386::Visit( ShlAssignExp * ) { }
+void Machine_i386::Visit( ShrAssignExp * ) { }
+void Machine_i386::Visit( UShrAssignExp * ) { }
+void Machine_i386::Visit( CallExp * ) { }
+void Machine_i386::Visit( ErroneousExpression * ) { }
+void Machine_i386::Visit( ThisExpression * ) { }
+void Machine_i386::Visit( AST_Node * ) { }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+***************************************************************************************************
+
+unsigned int
+hashstr (const char *str, unsigned int len)
+{
+  unsigned int n = len;
+  unsigned int r = 0;
+  const unsigned char *s = (const unsigned char *) str;
+
+  do
+    r = r * 67 + (*s++ - 113);
+  while (--n);
+  return r + len;
+}
+
+***************************************************************************************************
+
+
+
+return basicTypes[ CHAR ];
+return basicTypes[ BOOL ];	
+return basicTypes[ INT8 ];
+return basicTypes[ UINT8 ];
+return basicTypes[ INT32 ];
+return basicTypes[ UINT32 ];
+return basicTypes[ INT64 ];
+return basicTypes[ UINT64 ];
+return basicTypes[ FLOAT32 ];
+return basicTypes[ FLOAT64 ];
+return basicTypes[ FLOAT80 ];
+return basicTypes[ STRING ];
+
+return basicTypes[ VOID ];
+return basicTypes[ TYPE_NULL ];
+
+
+
+***************************************************************************************************
+
+
+
+macros will be scoped
+( nested in namespaces, functions, etc. )
+
+
+
+
+***************************************************************************************************
+
+
+
+#if 0
+
+/*
+=============================
+	class FlowChartElement
+=============================
+*/
+class FlowChartElement : public QWidget 
+{
+	Q_OBJECT
+
+public:
+				FlowChartElement( QWidget* parent = 0 )
+					: QWidget( parent )
+				{
+					/*setWFlags( WNoAutoErase );
+					setBackgroundMode( NoBackground );
+					setFrameStyle( Box | Sunken );*/
+
+					setSizePolicy( QSizePolicy::Minimum, QSizePolicy::Fixed );
+				}
+
+				~FlowChartElement()
+				{
+				}
+
+protected:
+	//-- visuals -------------------------------------------
+
+	virtual void	paintEvent( QPaintEvent* event )
+	{
+		QPainter	painter( this );
+		painter.setRenderHint(QPainter::Antialiasing, true);
+		painter.setPen(QPen(Qt::black, 15, Qt::SolidLine, Qt::RoundCap, Qt::MiterJoin));
+		painter.setBrush(QBrush(Qt::blue, Qt::DiagCrossPattern));
+		painter.drawPie(80, 80, 400, 240, 60 * 16, 270 * 16);
+
+	/*	QPixmap pix(size());
+		pix.fill(black);
+
+		QPainter painter(&pix);
+		float    fPar   = (width() / 255.0f);
+	    
+		for (int i = 0; i < (int)(width() * (m_nProgress / 100.0f)); ++i) {
+			QColor color(0, (int)(i / fPar), 0);
+			painter.setPen(QPen(color, 1, QPen::SolidLine));
+			painter.drawLine(i, 0, i, height());
+		}
+
+		painter.setPen(QPen(green, 1, QPen::SolidLine));
+		QString str = QString().setNum(m_nProgress) + "%";
+		painter.drawText(rect(), AlignCenter, str);
+
+		drawFrame(&painter);
+	    
+		::bitBlt(this, 0, 0, &pix);*/
+
+		//QWidget::paintEvent( event );
+	}
+
+	//-- mouse events --------------------------------------
+
+	virtual void mouseMoveEvent( QMouseEvent* event )
+	{
+		QWidget::mouseMoveEvent( event );
+	}
+
+	virtual void mouseReleaseEvent( QMouseEvent* event ) {
+		QWidget::mouseDoubleClickEvent( event );
+	}
+
+	virtual void mouseDoubleClickEvent( QMouseEvent* event ) {
+		QWidget::mouseDoubleClickEvent( event );
+	}
+
+	//-- look and feel -----------------
+	//QStyle *	style() const {
+	//	return
+	//}
+	virtual QSize sizeHint() const
+	{
+		 return QSize( 200, 30 );
+	}
+
+};
+#else
+
+
+
+***************************************************************************************************
+
+
+
+
+
+
+
+
+
+
+
+
+ Method name
+ Return type
+ Parameter list
+ Return expression 
+ Return statement
+ 
+ 
+ 
+ public void
+        Generate(
+        AST.AssignStmtExp nodeStmt)
+    {
+        // Do the assignement
+        GenerateAsStatement(nodeStmt);
+        
+        // Leave the value on top of the stack
+        nodeStmt.Left.GenerateAsRight(this);
+    }
+
+
+
+
+
+    public void 
+        GenerateAsStatement(
+        AST.AssignStmtExp nodeStmt)
+    {
+        MarkSequencePoint(nodeStmt.Location);
+#if false
+// a = new SomeStruct(...);    
+    [a]addr
+    initobj [SomeStruct]
+    [...]
+    call SomeStruct(...);
+#endif    
+        // one exception to the rule:
+        // If we're doing r= new <Struct>(...), then we don't generate a LSpost.
+        // But r=r2 does generate a post.
+        // So Either GenerateAfterAssignment knows what the rightside is, or we
+        // do a special case here.
+        if (nodeStmt.Right is AST.NewObjExp)
+        {
+            AST.NewObjExp nodeNew = (AST.NewObjExp) nodeStmt.Right;
+            if (nodeNew.CLRType.IsValueType)
+            {
+                nodeStmt.Left.GenerateAddrOf(this);
+                //nodeStmt.Right.GenerateAsRight(this);
+                
+                // If we're not the default ctor, then generate the call
+                if (nodeNew.SymbolCtor != null)
+                {
+                    foreach (AST.Exp eParam in nodeNew.Params)
+                    {
+                        eParam.GenerateAsRight(this);
+                    }
+                    ConstructorInfo info = nodeNew.SymbolCtor.Info as ConstructorInfo;
+                    Debug.Assert(info != null);
+                    m_ilGenerator.Emit(OpCodes.Call, info);
+                } 
+                else 
+                {
+                    // @todo - must make sure that the Ctor assigned everything since
+                    // we won't call InitObj when we have a  ctor
+                    m_ilGenerator.Emit(OpCodes.Initobj, nodeNew.CLRType);
+                }
+                
+                return;
+            }
+        }
+        
+#if false
+// a = b (as statement)
+    [a]ls_pre
+    [b]rs
+    [a]ls_post
+#endif    
+        nodeStmt.Left.GenerateBeforeAssignment(this);
+        
+        System.Type tExpected = nodeStmt.Left.CLRType;
+        GenerateBoxable(nodeStmt.Right, tExpected);
+        
+        nodeStmt.Left.GenerateAfterAssignment(this);
+    }
+
+
+
+
+
+
+
+
+//.........................................................................
+    // Code generation
+    // To codegen something like: 'a=b', we need to be able to do:
+    // [a]lhs_pre   // emit code to load context for the assignment
+    // [b]rhs       // emit code to load value to be assigned
+    // [a]lhs_post  // emit code to actually store the results
+    //
+    // Most expressions will only need a rhs.
+    //.........................................................................
+        
+    public virtual void GenerateBeforeAssignment(CodeGen.EmitCodeGen gen)
+    {
+        Debug.Assert(false, "Didn't implement GenerateBeforeAssignment");
+    }    
+    public virtual void GenerateAsRight(CodeGen.EmitCodeGen gen)
+    {
+        Debug.Assert(false, "Didn't implement GenerateAsRight");
+    }
+    public virtual void GenerateAfterAssignment(CodeGen.EmitCodeGen gen)
+    {
+        Debug.Assert(false, "Didn't implement GenerateAfterAssignment");
+    }
+    
+
+
+
+
+
+
+
+
+using System;
+using System.Diagnostics.SymbolStore;
+using System.Reflection;
+using System.Runtime.InteropServices;
+
+namespace System.Reflection.Emit {
+    // Summary:
+    //     Generates Microsoft intermediate language (MSIL) instructions.
+    [ComVisible( true )]
+    [ClassInterface( 0 )]
+    [ComDefaultInterface( typeof( _ILGenerator ) )]
+    public class ILGenerator : _ILGenerator {
+        // Summary:
+        //     Begins a catch block.
+        //
+        // Parameters:
+        //   exceptionType:
+        //     The Type object that represents the exception.
+        //
+        // Exceptions:
+        //   System.NotSupportedException:
+        //     The Microsoft intermediate language (MSIL) being generated is not currently
+        //     in an exception block.
+        //
+        //   System.ArgumentException:
+        //     The catch block is within a filtered exception.
+        //
+        //   System.ArgumentNullException:
+        //     exceptionType is null and the exception filter block has not returned a value
+        //     that indicates that finally blocks should be run until this catch block is
+        //     located.
+        public virtual void BeginCatchBlock( Type exceptionType );
+        //
+        // Summary:
+        //     Begins an exception block for a filtered exception.
+        //
+        // Exceptions:
+        //   System.NotSupportedException:
+        //     The Microsoft intermediate language (MSIL) being generated is not currently
+        //     in an exception block.
+        public virtual void BeginExceptFilterBlock();
+        //
+        // Summary:
+        //     Begins an exception block for a non-filtered exception.
+        //
+        // Returns:
+        //     The label for the end of the block. This will leave you in the correct place
+        //     to execute finally blocks or to finish the try.
+        public virtual Label BeginExceptionBlock();
+        //
+        // Summary:
+        //     Begins an exception fault block in the Microsoft intermediate language (MSIL)
+        //     stream.
+        //
+        // Exceptions:
+        //   System.NotSupportedException:
+        //     The Microsoft intermediate language (MSIL) being generated is not currently
+        //     in an exception block.
+        public virtual void BeginFaultBlock();
+        //
+        // Summary:
+        //     Begins a finally block in the Microsoft intermediate language (MSIL) instruction
+        //     stream.
+        //
+        // Exceptions:
+        //   System.NotSupportedException:
+        //     The Microsoft intermediate language (MSIL) being generated is not currently
+        //     in an exception block.
+        public virtual void BeginFinallyBlock();
+        //
+        // Summary:
+        //     Begins a lexical scope.
+        public virtual void BeginScope();
+        //
+        // Summary:
+        //     Declares a local variable of the specified type.
+        //
+        // Parameters:
+        //   localType:
+        //     A System.Type object that represents the type of the local variable.
+        //
+        // Returns:
+        //     The declared local variable.
+        //
+        // Exceptions:
+        //   System.ArgumentNullException:
+        //     localType is null.
+        //
+        //   System.InvalidOperationException:
+        //     The containing type has been created by the System.Reflection.Emit.TypeBuilder.CreateType()
+        //     method.
+        public virtual LocalBuilder DeclareLocal( Type localType );
+        //
+        // Summary:
+        //     Declares a local variable of the specified type, optionally pinning the object
+        //     referred to by the variable.
+        //
+        // Parameters:
+        //   pinned:
+        //     true to pin the object in memory; otherwise, false.
+        //
+        //   localType:
+        //     A System.Type object that represents the type of the local variable.
+        //
+        // Returns:
+        //     A System.Reflection.Emit.LocalBuilder object that represents the local variable.
+        //
+        // Exceptions:
+        //   System.ArgumentNullException:
+        //     localType is null.
+        //
+        //   System.NotSupportedException:
+        //     The method with which this System.Reflection.Emit.ILGenerator is associated
+        //     is not represented by a System.Reflection.Emit.MethodBuilder.
+        //
+        //   System.InvalidOperationException:
+        //     The containing type has been created by the System.Reflection.Emit.TypeBuilder.CreateType()
+        //     method.-or-The method body of the enclosing method has been created by the
+        //     System.Reflection.Emit.MethodBuilder.CreateMethodBody(System.Byte[],System.Int32)
+        //     method.
+        public virtual LocalBuilder DeclareLocal( Type localType, bool pinned );
+        //
+        // Summary:
+        //     Declares a new label.
+        //
+        // Returns:
+        //     Returns a new label that can be used as a token for branching.
+        public virtual Label DefineLabel();
+        //
+        // Summary:
+        //     Puts the specified instruction onto the stream of instructions.
+        //
+        // Parameters:
+        //   opcode:
+        //     The Microsoft Intermediate Language (MSIL) instruction to be put onto the
+        //     stream.
+        public virtual void Emit( OpCode opcode );
+        //
+        // Summary:
+        //     Puts the specified instruction and character argument onto the Microsoft
+        //     intermediate language (MSIL) stream of instructions.
+        //
+        // Parameters:
+        //   arg:
+        //     The character argument pushed onto the stream immediately after the instruction.
+        //
+        //   opcode:
+        //     The Microsoft intermediate language (MSIL) instruction to be put onto the
+        //     stream.
+        public virtual void Emit( OpCode opcode, byte arg );
+        //
+        // Summary:
+        //     Puts the specified instruction and metadata token for the specified constructor
+        //     onto the Microsoft intermediate language (MSIL) stream of instructions.
+        //
+        // Parameters:
+        //   opcode:
+        //     The Microsoft intermediate language (MSIL) instruction to be emitted onto
+        //     the stream.
+        //
+        //   con:
+        //     A ConstructorInfo representing a constructor.
+        [ComVisible( true )]
+        public virtual void Emit( OpCode opcode, ConstructorInfo con );
+        //
+        // Summary:
+        //     Puts the specified instruction and numerical argument onto the Microsoft
+        //     intermediate language (MSIL) stream of instructions.
+        //
+        // Parameters:
+        //   arg:
+        //     The numerical argument pushed onto the stream immediately after the instruction.
+        //
+        //   opcode:
+        //     The Microsoft intermediate language (MSIL) instruction to be put onto the
+        //     stream. Defined in the OpCodes enumeration.
+        public virtual void Emit( OpCode opcode, double arg );
+        //
+        // Summary:
+        //     Puts the specified instruction and metadata token for the specified field
+        //     onto the Microsoft intermediate language (MSIL) stream of instructions.
+        //
+        // Parameters:
+        //   opcode:
+        //     The Microsoft intermediate language (MSIL) instruction to be emitted onto
+        //     the stream.
+        //
+        //   field:
+        //     A FieldInfo representing a field.
+        public virtual void Emit( OpCode opcode, FieldInfo field );
+        //
+        // Summary:
+        //     Puts the specified instruction and numerical argument onto the Microsoft
+        //     intermediate language (MSIL) stream of instructions.
+        //
+        // Parameters:
+        //   arg:
+        //     The Single argument pushed onto the stream immediately after the instruction.
+        //
+        //   opcode:
+        //     The Microsoft intermediate language (MSIL) instruction to be put onto the
+        //     stream.
+        public virtual void Emit( OpCode opcode, float arg );
+        //
+        // Summary:
+        //     Puts the specified instruction and numerical argument onto the Microsoft
+        //     intermediate language (MSIL) stream of instructions.
+        //
+        // Parameters:
+        //   arg:
+        //     The numerical argument pushed onto the stream immediately after the instruction.
+        //
+        //   opcode:
+        //     The Microsoft intermediate language (MSIL) instruction to be put onto the
+        //     stream.
+        public virtual void Emit( OpCode opcode, int arg );
+        //
+        // Summary:
+        //     Puts the specified instruction onto the Microsoft intermediate language (MSIL)
+        //     stream and leaves space to include a label when fixes are done.
+        //
+        // Parameters:
+        //   opcode:
+        //     The Microsoft intermediate language (MSIL) instruction to be emitted onto
+        //     the stream.
+        //
+        //   label:
+        //     The label to which to branch from this location.
+        public virtual void Emit( OpCode opcode, Label label );
+        //
+        // Summary:
+        //     Puts the specified instruction onto the Microsoft intermediate language (MSIL)
+        //     stream and leaves space to include a label when fixes are done.
+        //
+        // Parameters:
+        //   labels:
+        //     The array of label objects to which to branch from this location. All of
+        //     the labels will be used.
+        //
+        //   opcode:
+        //     The Microsoft intermediate language (MSIL) instruction to be emitted onto
+        //     the stream.
+        public virtual void Emit( OpCode opcode, Label [] labels );
+        //
+        // Summary:
+        //     Puts the specified instruction onto the Microsoft intermediate language (MSIL)
+        //     stream followed by the index of the given local variable.
+        //
+        // Parameters:
+        //   opcode:
+        //     The MSIL instruction to be emitted onto the stream.
+        //
+        //   local:
+        //     A local variable.
+        //
+        // Exceptions:
+        //   System.InvalidOperationException:
+        //     instruction is a single-byte instruction and local represents a local with
+        //     an index of greater than Byte.MaxValue.
+        //
+        //   System.ArgumentException:
+        //     local 's parent method does not match the method associated with this ILGenerator.
+        //
+        //   System.ArgumentNullException:
+        //     local is null.
+        public virtual void Emit( OpCode opcode, LocalBuilder local );
+        //
+        // Summary:
+        //     Puts the specified instruction and numerical argument onto the Microsoft
+        //     intermediate language (MSIL) stream of instructions.
+        //
+        // Parameters:
+        //   arg:
+        //     The numerical argument pushed onto the stream immediately after the instruction.
+        //
+        //   opcode:
+        //     The Microsoft intermediate language (MSIL) instruction to be put onto the
+        //     stream.
+        public virtual void Emit( OpCode opcode, long arg );
+        //
+        // Summary:
+        //     Puts the specified instruction onto the Microsoft intermediate language (MSIL)
+        //     stream followed by the metadata token for the given method.
+        //
+        // Parameters:
+        //   meth:
+        //     A MethodInfo representing a method.
+        //
+        //   opcode:
+        //     The MSIL instruction to be emitted onto the stream.
+        //
+        // Exceptions:
+        //   System.ArgumentNullException:
+        //     meth is null.
+        //
+        //   System.NotSupportedException:
+        //     meth is a generic method for which the System.Reflection.MethodInfo.IsGenericMethodDefinition
+        //     property is false.
+        public virtual void Emit( OpCode opcode, MethodInfo meth );
+        //
+        // Summary:
+        //     Puts the specified instruction and character argument onto the Microsoft
+        //     intermediate language (MSIL) stream of instructions.
+        //
+        // Parameters:
+        //   arg:
+        //     The character argument pushed onto the stream immediately after the instruction.
+        //
+        //   opcode:
+        //     The Microsoft intermediate language (MSIL) instruction to be put onto the
+        //     stream.
+        [CLSCompliant( false )]
+        public void Emit( OpCode opcode, sbyte arg );
+        //
+        // Summary:
+        //     Puts the specified instruction and numerical argument onto the Microsoft
+        //     intermediate language (MSIL) stream of instructions.
+        //
+        // Parameters:
+        //   arg:
+        //     The Int argument pushed onto the stream immediately after the instruction.
+        //
+        //   opcode:
+        //     The Microsoft intermediate language (MSIL) instruction to be emitted onto
+        //     the stream.
+        public virtual void Emit( OpCode opcode, short arg );
+        //
+        // Summary:
+        //     Puts the specified instruction and a signature token onto the Microsoft intermediate
+        //     language (MSIL) stream of instructions.
+        //
+        // Parameters:
+        //   opcode:
+        //     The Microsoft intermediate language (MSIL) instruction to be emitted onto
+        //     the stream.
+        //
+        //   signature:
+        //     A helper for constructing a signature token.
+        //
+        // Exceptions:
+        //   System.ArgumentNullException:
+        //     signature is null.
+        public virtual void Emit( OpCode opcode, SignatureHelper signature );
+        //
+        // Summary:
+        //     Puts the specified instruction onto the Microsoft intermediate language (MSIL)
+        //     stream followed by the metadata token for the given string.
+        //
+        // Parameters:
+        //   str:
+        //     The String to be emitted.
+        //
+        //   opcode:
+        //     The MSIL instruction to be emitted onto the stream.
+        public virtual void Emit( OpCode opcode, string str );
+        //
+        // Summary:
+        //     Puts the specified instruction onto the Microsoft intermediate language (MSIL)
+        //     stream followed by the metadata token for the given type.
+        //
+        // Parameters:
+        //   opcode:
+        //     The MSIL instruction to be put onto the stream.
+        //
+        //   cls:
+        //     A Type.
+        //
+        // Exceptions:
+        //   System.ArgumentNullException:
+        //     cls is null.
+        public virtual void Emit( OpCode opcode, Type cls );
+        //
+        // Summary:
+        //     Puts a call or callvirt instruction onto the Microsoft intermediate language
+        //     (MSIL) stream.
+        //
+        // Parameters:
+        //   opcode:
+        //     The MSIL instruction to be emitted onto the stream.
+        //
+        //   methodInfo:
+        //     The method to be called.
+        //
+        //   optionalParameterTypes:
+        //     The types of the optional arguments if the method is a varargs method; otherwise,
+        //     null.
+        //
+        // Exceptions:
+        //   System.ArgumentNullException:
+        //     methodInfo is null.
+        //
+        //   System.InvalidOperationException:
+        //     The calling convention for the method is not varargs but optional parameter
+        //     types are supplied.
+        public virtual void EmitCall( OpCode opcode, MethodInfo methodInfo, Type [] optionalParameterTypes );
+        //
+        // Summary:
+        //     Puts a System.Reflection.Emit.OpCodes.Calli instruction onto the Microsoft
+        //     intermediate language (MSIL) stream, specifying an unmanaged calling convention
+        //     for the indirect call.
+        //
+        // Parameters:
+        //   opcode:
+        //     The MSIL instruction to be emitted onto the stream.
+        //
+        //   returnType:
+        //     The System.Type of the result.
+        //
+        //   unmanagedCallConv:
+        //     The unmanaged calling convention to be used.
+        //
+        //   parameterTypes:
+        //     The types of the required arguments to the instruction.
+        public virtual void EmitCalli( OpCode opcode, CallingConvention unmanagedCallConv, Type returnType, Type [] parameterTypes );
+        //
+        // Summary:
+        //     Puts a System.Reflection.Emit.OpCodes.Calli instruction onto the Microsoft
+        //     intermediate language (MSIL) stream, specifying a managed calling convention
+        //     for the indirect call.
+        //
+        // Parameters:
+        //   callingConvention:
+        //     The managed calling convention to be used.
+        //
+        //   opcode:
+        //     The MSIL instruction to be emitted onto the stream.
+        //
+        //   returnType:
+        //     The System.Type of the result.
+        //
+        //   optionalParameterTypes:
+        //     The types of the optional arguments for varargs calls.
+        //
+        //   parameterTypes:
+        //     The types of the required arguments to the instruction.
+        //
+        // Exceptions:
+        //   System.InvalidOperationException:
+        //     optionalParameterTypes is not null, but callingConvention does not include
+        //     the System.Reflection.CallingConventions.VarArgs flag.
+        public virtual void EmitCalli( OpCode opcode, CallingConventions callingConvention, Type returnType, Type [] parameterTypes, Type [] optionalParameterTypes );
+        //
+        // Summary:
+        //     Emits the Microsoft intermediate language (MSIL) necessary to call Overload:System.Console.WriteLine
+        //     with the given field.
+        //
+        // Parameters:
+        //   fld:
+        //     The field whose value is to be written to the console.
+        //
+        // Exceptions:
+        //   System.ArgumentNullException:
+        //     fld is null.
+        //
+        //   System.ArgumentException:
+        //     There is no overload of the Overload:System.Console.WriteLine method that
+        //     accepts the type of the specified field.
+        //
+        //   System.NotSupportedException:
+        //     The type of the field is System.Reflection.Emit.TypeBuilder or System.Reflection.Emit.EnumBuilder,
+        //     which are not supported.
+        public virtual void EmitWriteLine( FieldInfo fld );
+        //
+        // Summary:
+        //     Emits the Microsoft intermediate language (MSIL) necessary to call Overload:System.Console.WriteLine
+        //     with the given local variable.
+        //
+        // Parameters:
+        //   localBuilder:
+        //     The local variable whose value is to be written to the console.
+        //
+        // Exceptions:
+        //   System.ArgumentException:
+        //     The type of localBuilder is System.Reflection.Emit.TypeBuilder or System.Reflection.Emit.EnumBuilder,
+        //     which are not supported. -or-There is no overload of Overload:System.Console.WriteLine
+        //     that accepts the type of localBuilder.
+        //
+        //   System.ArgumentNullException:
+        //     localBuilder is null.
+        public virtual void EmitWriteLine( LocalBuilder localBuilder );
+        //
+        // Summary:
+        //     Emits the Microsoft intermediate language (MSIL) to call Overload:System.Console.WriteLine
+        //     with a string.
+        //
+        // Parameters:
+        //   value:
+        //     The string to be printed.
+        public virtual void EmitWriteLine( string value );
+        //
+        // Summary:
+        //     Ends an exception block.
+        //
+        // Exceptions:
+        //   System.NotSupportedException:
+        //     The Microsoft intermediate language (MSIL) being generated is not currently
+        //     in an exception block.
+        //
+        //   System.InvalidOperationException:
+        //     The end exception block occurs in an unexpected place in the code stream.
+        public virtual void EndExceptionBlock();
+        //
+        // Summary:
+        //     Ends a lexical scope.
+        public virtual void EndScope();
+        //
+        // Summary:
+        //     Marks the Microsoft intermediate language (MSIL) stream's current position
+        //     with the given label.
+        //
+        // Parameters:
+        //   loc:
+        //     The label for which to set an index.
+        //
+        // Exceptions:
+        //   System.ArgumentException:
+        //     loc represents an invalid index into the label array.-or- An index for loc
+        //     has already been defined.
+        public virtual void MarkLabel( Label loc );
+        //
+        // Summary:
+        //     Marks a sequence point in the Microsoft intermediate language (MSIL) stream.
+        //
+        // Parameters:
+        //   startLine:
+        //     The line where the sequence point begins.
+        //
+        //   endLine:
+        //     The line where the sequence point ends.
+        //
+        //   startColumn:
+        //     The column in the line where the sequence point begins.
+        //
+        //   document:
+        //     The document for which the sequence point is being defined.
+        //
+        //   endColumn:
+        //     The column in the line where the sequence point ends.
+        //
+        // Exceptions:
+        //   System.ArgumentOutOfRangeException:
+        //     startLine or endLine is <= 0.
+        public virtual void MarkSequencePoint( ISymbolDocumentWriter document, int startLine, int startColumn, int endLine, int endColumn );
+        //
+        // Summary:
+        //     Emits an instruction to throw an exception.
+        //
+        // Parameters:
+        //   excType:
+        //     The class of the type of exception to throw.
+        //
+        // Exceptions:
+        //   System.ArgumentNullException:
+        //     excType is null.
+        //
+        //   System.ArgumentException:
+        //     excType is not the System.Exception class or a derived class of System.Exception.-or-
+        //     The type does not have a default constructor.
+        public virtual void ThrowException( Type excType );
+        //
+        // Summary:
+        //     Specifies the namespace to be used in evaluating locals and watches for the
+        //     current active lexical scope.
+        //
+        // Parameters:
+        //   usingNamespace:
+        //     The namespace to be used in evaluating locals and watches for the current
+        //     active lexical scope
+        //
+        // Exceptions:
+        //   System.ArgumentNullException:
+        //     usingNamespace is null.
+        //
+        //   System.ArgumentException:
+        //     Length of usingNamespace is zero.
+        public virtual void UsingNamespace( string usingNamespace );
+    }
+}
+
+
+
+using System;
+using System.Runtime.InteropServices;
+
+namespace System.Reflection.Emit {
+    // Summary:
+    //     Provides field representations of the Microsoft Intermediate Language (MSIL)
+    //     instructions for emission by the System.Reflection.Emit.ILGenerator class
+    //     members (such as System.Reflection.Emit.ILGenerator.Emit(System.Reflection.Emit.OpCode)).
+    [ComVisible( true )]
+    public class OpCodes {
+        // Summary:
+        //     Adds two values and pushes the result onto the evaluation stack.
+        public static readonly OpCode Add;
+        //
+        // Summary:
+        //     Adds two integers, performs an overflow check, and pushes the result onto
+        //     the evaluation stack.
+        public static readonly OpCode Add_Ovf;
+        //
+        // Summary:
+        //     Adds two unsigned integer values, performs an overflow check, and pushes
+        //     the result onto the evaluation stack.
+        public static readonly OpCode Add_Ovf_Un;
+        //
+        // Summary:
+        //     Computes the bitwise AND of two values and pushes the result onto the evaluation
+        //     stack.
+        public static readonly OpCode And;
+        //
+        // Summary:
+        //     Returns an unmanaged pointer to the argument list of the current method.
+        public static readonly OpCode Arglist;
+        //
+        // Summary:
+        //     Transfers control to a target instruction if two values are equal.
+        public static readonly OpCode Beq;
+        //
+        // Summary:
+        //     Transfers control to a target instruction (short form) if two values are
+        //     equal.
+        public static readonly OpCode Beq_S;
+        //
+        // Summary:
+        //     Transfers control to a target instruction if the first value is greater than
+        //     or equal to the second value.
+        public static readonly OpCode Bge;
+        //
+        // Summary:
+        //     Transfers control to a target instruction (short form) if the first value
+        //     is greater than or equal to the second value.
+        public static readonly OpCode Bge_S;
+        //
+        // Summary:
+        //     Transfers control to a target instruction if the first value is greater than
+        //     the second value, when comparing unsigned integer values or unordered float
+        //     values.
+        public static readonly OpCode Bge_Un;
+        //
+        // Summary:
+        //     Transfers control to a target instruction (short form) if the first value
+        //     is greater than the second value, when comparing unsigned integer values
+        //     or unordered float values.
+        public static readonly OpCode Bge_Un_S;
+        //
+        // Summary:
+        //     Transfers control to a target instruction if the first value is greater than
+        //     the second value.
+        public static readonly OpCode Bgt;
+        //
+        // Summary:
+        //     Transfers control to a target instruction (short form) if the first value
+        //     is greater than the second value.
+        public static readonly OpCode Bgt_S;
+        //
+        // Summary:
+        //     Transfers control to a target instruction if the first value is greater than
+        //     the second value, when comparing unsigned integer values or unordered float
+        //     values.
+        public static readonly OpCode Bgt_Un;
+        //
+        // Summary:
+        //     Transfers control to a target instruction (short form) if the first value
+        //     is greater than the second value, when comparing unsigned integer values
+        //     or unordered float values.
+        public static readonly OpCode Bgt_Un_S;
+        //
+        // Summary:
+        //     Transfers control to a target instruction if the first value is less than
+        //     or equal to the second value.
+        public static readonly OpCode Ble;
+        //
+        // Summary:
+        //     Transfers control to a target instruction (short form) if the first value
+        //     is less than or equal to the second value.
+        public static readonly OpCode Ble_S;
+        //
+        // Summary:
+        //     Transfers control to a target instruction if the first value is less than
+        //     or equal to the second value, when comparing unsigned integer values or unordered
+        //     float values.
+        public static readonly OpCode Ble_Un;
+        //
+        // Summary:
+        //     Transfers control to a target instruction (short form) if the first value
+        //     is less than or equal to the second value, when comparing unsigned integer
+        //     values or unordered float values.
+        public static readonly OpCode Ble_Un_S;
+        //
+        // Summary:
+        //     Transfers control to a target instruction if the first value is less than
+        //     the second value.
+        public static readonly OpCode Blt;
+        //
+        // Summary:
+        //     Transfers control to a target instruction (short form) if the first value
+        //     is less than the second value.
+        public static readonly OpCode Blt_S;
+        //
+        // Summary:
+        //     Transfers control to a target instruction if the first value is less than
+        //     the second value, when comparing unsigned integer values or unordered float
+        //     values.
+        public static readonly OpCode Blt_Un;
+        //
+        // Summary:
+        //     Transfers control to a target instruction (short form) if the first value
+        //     is less than the second value, when comparing unsigned integer values or
+        //     unordered float values.
+        public static readonly OpCode Blt_Un_S;
+        //
+        // Summary:
+        //     Transfers control to a target instruction when two unsigned integer values
+        //     or unordered float values are not equal.
+        public static readonly OpCode Bne_Un;
+        //
+        // Summary:
+        //     Transfers control to a target instruction (short form) when two unsigned
+        //     integer values or unordered float values are not equal.
+        public static readonly OpCode Bne_Un_S;
+        //
+        // Summary:
+        //     Converts a value type to an object reference (type O).
+        public static readonly OpCode Box;
+        //
+        // Summary:
+        //     Unconditionally transfers control to a target instruction.
+        public static readonly OpCode Br;
+        //
+        // Summary:
+        //     Unconditionally transfers control to a target instruction (short form).
+        public static readonly OpCode Br_S;
+        //
+        // Summary:
+        //     Signals the Common Language Infrastructure (CLI) to inform the debugger that
+        //     a break point has been tripped.
+        public static readonly OpCode Break;
+        //
+        // Summary:
+        //     Transfers control to a target instruction if value is false, a null reference
+        //     (Nothing in Visual Basic), or zero.
+        public static readonly OpCode Brfalse;
+        //
+        // Summary:
+        //     Transfers control to a target instruction if value is false, a null reference,
+        //     or zero.
+        public static readonly OpCode Brfalse_S;
+        //
+        // Summary:
+        //     Transfers control to a target instruction if value is true, not null, or
+        //     non-zero.
+        public static readonly OpCode Brtrue;
+        //
+        // Summary:
+        //     Transfers control to a target instruction (short form) if value is true,
+        //     not null, or non-zero.
+        public static readonly OpCode Brtrue_S;
+        //
+        // Summary:
+        //     Calls the method indicated by the passed method descriptor.
+        public static readonly OpCode Call;
+        //
+        // Summary:
+        //     Calls the method indicated on the evaluation stack (as a pointer to an entry
+        //     point) with arguments described by a calling convention.
+        public static readonly OpCode Calli;
+        //
+        // Summary:
+        //     Calls a late-bound method on an object, pushing the return value onto the
+        //     evaluation stack.
+        public static readonly OpCode Callvirt;
+        //
+        // Summary:
+        //     Attempts to cast an object passed by reference to the specified class.
+        [ComVisible( true )]
+        public static readonly OpCode Castclass;
+        //
+        // Summary:
+        //     Compares two values. If they are equal, the integer value 1 (int32) is pushed
+        //     onto the evaluation stack; otherwise 0 (int32) is pushed onto the evaluation
+        //     stack.
+        public static readonly OpCode Ceq;
+        //
+        // Summary:
+        //     Compares two values. If the first value is greater than the second, the integer
+        //     value 1 (int32) is pushed onto the evaluation stack; otherwise 0 (int32)
+        //     is pushed onto the evaluation stack.
+        public static readonly OpCode Cgt;
+        //
+        // Summary:
+        //     Compares two unsigned or unordered values. If the first value is greater
+        //     than the second, the integer value 1 (int32) is pushed onto the evaluation
+        //     stack; otherwise 0 (int32) is pushed onto the evaluation stack.
+        public static readonly OpCode Cgt_Un;
+        //
+        // Summary:
+        //     Throws System.ArithmeticException if value is not a finite number.
+        public static readonly OpCode Ckfinite;
+        //
+        // Summary:
+        //     Compares two values. If the first value is less than the second, the integer
+        //     value 1 (int32) is pushed onto the evaluation stack; otherwise 0 (int32)
+        //     is pushed onto the evaluation stack.
+        public static readonly OpCode Clt;
+        //
+        // Summary:
+        //     Compares the unsigned or unordered values value1 and value2. If value1 is
+        //     less than value2, then the integer value 1 (int32) is pushed onto the evaluation
+        //     stack; otherwise 0 (int32) is pushed onto the evaluation stack.
+        public static readonly OpCode Clt_Un;
+        //
+        // Summary:
+        //     Constrains the type on which a virtual method call is made.
+        public static readonly OpCode Constrained;
+        //
+        // Summary:
+        //     Converts the value on top of the evaluation stack to natural int.
+        public static readonly OpCode Conv_I;
+        //
+        // Summary:
+        //     Converts the value on top of the evaluation stack to int8, then extends (pads)
+        //     it to int32.
+        public static readonly OpCode Conv_I1;
+        //
+        // Summary:
+        //     Converts the value on top of the evaluation stack to int16, then extends
+        //     (pads) it to int32.
+        public static readonly OpCode Conv_I2;
+        //
+        // Summary:
+        //     Converts the value on top of the evaluation stack to int32.
+        public static readonly OpCode Conv_I4;
+        //
+        // Summary:
+        //     Converts the value on top of the evaluation stack to int64.
+        public static readonly OpCode Conv_I8;
+        //
+        // Summary:
+        //     Converts the signed value on top of the evaluation stack to signed natural
+        //     int, throwing System.OverflowException on overflow.
+        public static readonly OpCode Conv_Ovf_I;
+        //
+        // Summary:
+        //     Converts the unsigned value on top of the evaluation stack to signed natural
+        //     int, throwing System.OverflowException on overflow.
+        public static readonly OpCode Conv_Ovf_I_Un;
+        //
+        // Summary:
+        //     Converts the signed value on top of the evaluation stack to signed int8 and
+        //     extends it to int32, throwing System.OverflowException on overflow.
+        public static readonly OpCode Conv_Ovf_I1;
+        //
+        // Summary:
+        //     Converts the unsigned value on top of the evaluation stack to signed int8
+        //     and extends it to int32, throwing System.OverflowException on overflow.
+        public static readonly OpCode Conv_Ovf_I1_Un;
+        //
+        // Summary:
+        //     Converts the signed value on top of the evaluation stack to signed int16
+        //     and extending it to int32, throwing System.OverflowException on overflow.
+        public static readonly OpCode Conv_Ovf_I2;
+        //
+        // Summary:
+        //     Converts the unsigned value on top of the evaluation stack to signed int16
+        //     and extends it to int32, throwing System.OverflowException on overflow.
+        public static readonly OpCode Conv_Ovf_I2_Un;
+        //
+        // Summary:
+        //     Converts the signed value on top of the evaluation stack to signed int32,
+        //     throwing System.OverflowException on overflow.
+        public static readonly OpCode Conv_Ovf_I4;
+        //
+        // Summary:
+        //     Converts the unsigned value on top of the evaluation stack to signed int32,
+        //     throwing System.OverflowException on overflow.
+        public static readonly OpCode Conv_Ovf_I4_Un;
+        //
+        // Summary:
+        //     Converts the signed value on top of the evaluation stack to signed int64,
+        //     throwing System.OverflowException on overflow.
+        public static readonly OpCode Conv_Ovf_I8;
+        //
+        // Summary:
+        //     Converts the unsigned value on top of the evaluation stack to signed int64,
+        //     throwing System.OverflowException on overflow.
+        public static readonly OpCode Conv_Ovf_I8_Un;
+        //
+        // Summary:
+        //     Converts the signed value on top of the evaluation stack to unsigned natural
+        //     int, throwing System.OverflowException on overflow.
+        public static readonly OpCode Conv_Ovf_U;
+        //
+        // Summary:
+        //     Converts the unsigned value on top of the evaluation stack to unsigned natural
+        //     int, throwing System.OverflowException on overflow.
+        public static readonly OpCode Conv_Ovf_U_Un;
+        //
+        // Summary:
+        //     Converts the signed value on top of the evaluation stack to unsigned int8
+        //     and extends it to int32, throwing System.OverflowException on overflow.
+        public static readonly OpCode Conv_Ovf_U1;
+        //
+        // Summary:
+        //     Converts the unsigned value on top of the evaluation stack to unsigned int8
+        //     and extends it to int32, throwing System.OverflowException on overflow.
+        public static readonly OpCode Conv_Ovf_U1_Un;
+        //
+        // Summary:
+        //     Converts the signed value on top of the evaluation stack to unsigned int16
+        //     and extends it to int32, throwing System.OverflowException on overflow.
+        public static readonly OpCode Conv_Ovf_U2;
+        //
+        // Summary:
+        //     Converts the unsigned value on top of the evaluation stack to unsigned int16
+        //     and extends it to int32, throwing System.OverflowException on overflow.
+        public static readonly OpCode Conv_Ovf_U2_Un;
+        //
+        // Summary:
+        //     Converts the signed value on top of the evaluation stack to unsigned int32,
+        //     throwing System.OverflowException on overflow.
+        public static readonly OpCode Conv_Ovf_U4;
+        //
+        // Summary:
+        //     Converts the unsigned value on top of the evaluation stack to unsigned int32,
+        //     throwing System.OverflowException on overflow.
+        public static readonly OpCode Conv_Ovf_U4_Un;
+        //
+        // Summary:
+        //     Converts the signed value on top of the evaluation stack to unsigned int64,
+        //     throwing System.OverflowException on overflow.
+        public static readonly OpCode Conv_Ovf_U8;
+        //
+        // Summary:
+        //     Converts the unsigned value on top of the evaluation stack to unsigned int64,
+        //     throwing System.OverflowException on overflow.
+        public static readonly OpCode Conv_Ovf_U8_Un;
+        //
+        // Summary:
+        //     Converts the unsigned integer value on top of the evaluation stack to float32.
+        public static readonly OpCode Conv_R_Un;
+        //
+        // Summary:
+        //     Converts the value on top of the evaluation stack to float32.
+        public static readonly OpCode Conv_R4;
+        //
+        // Summary:
+        //     Converts the value on top of the evaluation stack to float64.
+        public static readonly OpCode Conv_R8;
+        //
+        // Summary:
+        //     Converts the value on top of the evaluation stack to unsigned natural int,
+        //     and extends it to natural int.
+        public static readonly OpCode Conv_U;
+        //
+        // Summary:
+        //     Converts the value on top of the evaluation stack to unsigned int8, and extends
+        //     it to int32.
+        public static readonly OpCode Conv_U1;
+        //
+        // Summary:
+        //     Converts the value on top of the evaluation stack to unsigned int16, and
+        //     extends it to int32.
+        public static readonly OpCode Conv_U2;
+        //
+        // Summary:
+        //     Converts the value on top of the evaluation stack to unsigned int32, and
+        //     extends it to int32.
+        public static readonly OpCode Conv_U4;
+        //
+        // Summary:
+        //     Converts the value on top of the evaluation stack to unsigned int64, and
+        //     extends it to int64.
+        public static readonly OpCode Conv_U8;
+        //
+        // Summary:
+        //     Copies a specified number bytes from a source address to a destination address.
+        public static readonly OpCode Cpblk;
+        //
+        // Summary:
+        //     Copies the value type located at the address of an object (type &, * or natural
+        //     int) to the address of the destination object (type &, * or natural int).
+        public static readonly OpCode Cpobj;
+        //
+        // Summary:
+        //     Divides two values and pushes the result as a floating-point (type F) or
+        //     quotient (type int32) onto the evaluation stack.
+        public static readonly OpCode Div;
+        //
+        // Summary:
+        //     Divides two unsigned integer values and pushes the result (int32) onto the
+        //     evaluation stack.
+        public static readonly OpCode Div_Un;
+        //
+        // Summary:
+        //     Copies the current topmost value on the evaluation stack, and then pushes
+        //     the copy onto the evaluation stack.
+        public static readonly OpCode Dup;
+        //
+        // Summary:
+        //     Transfers control from the filter clause of an exception back to the Common
+        //     Language Infrastructure (CLI) exception handler.
+        public static readonly OpCode Endfilter;
+        //
+        // Summary:
+        //     Transfers control from the fault or finally clause of an exception block
+        //     back to the Common Language Infrastructure (CLI) exception handler.
+        public static readonly OpCode Endfinally;
+        //
+        // Summary:
+        //     Initializes a specified block of memory at a specific address to a given
+        //     size and initial value.
+        public static readonly OpCode Initblk;
+        //
+        // Summary:
+        //     Initializes all the fields of the object at a specific address to a null
+        //     reference or a 0 of the appropriate primitive type.
+        public static readonly OpCode Initobj;
+        //
+        // Summary:
+        //     Tests whether an object reference (type O) is an instance of a particular
+        //     class.
+        public static readonly OpCode Isinst;
+        //
+        // Summary:
+        //     Exits current method and jumps to specified method.
+        public static readonly OpCode Jmp;
+        //
+        // Summary:
+        //     Loads an argument (referenced by a specified index value) onto the stack.
+        public static readonly OpCode Ldarg;
+        //
+        // Summary:
+        //     Loads the argument at index 0 onto the evaluation stack.
+        public static readonly OpCode Ldarg_0;
+        //
+        // Summary:
+        //     Loads the argument at index 1 onto the evaluation stack.
+        public static readonly OpCode Ldarg_1;
+        //
+        // Summary:
+        //     Loads the argument at index 2 onto the evaluation stack.
+        public static readonly OpCode Ldarg_2;
+        //
+        // Summary:
+        //     Loads the argument at index 3 onto the evaluation stack.
+        public static readonly OpCode Ldarg_3;
+        //
+        // Summary:
+        //     Loads the argument (referenced by a specified short form index) onto the
+        //     evaluation stack.
+        public static readonly OpCode Ldarg_S;
+        //
+        // Summary:
+        //     Load an argument address onto the evaluation stack.
+        public static readonly OpCode Ldarga;
+        //
+        // Summary:
+        //     Load an argument address, in short form, onto the evaluation stack.
+        public static readonly OpCode Ldarga_S;
+        //
+        // Summary:
+        //     Pushes a supplied value of type int32 onto the evaluation stack as an int32.
+        public static readonly OpCode Ldc_I4;
+        //
+        // Summary:
+        //     Pushes the integer value of 0 onto the evaluation stack as an int32.
+        public static readonly OpCode Ldc_I4_0;
+        //
+        // Summary:
+        //     Pushes the integer value of 1 onto the evaluation stack as an int32.
+        public static readonly OpCode Ldc_I4_1;
+        //
+        // Summary:
+        //     Pushes the integer value of 2 onto the evaluation stack as an int32.
+        public static readonly OpCode Ldc_I4_2;
+        //
+        // Summary:
+        //     Pushes the integer value of 3 onto the evaluation stack as an int32.
+        public static readonly OpCode Ldc_I4_3;
+        //
+        // Summary:
+        //     Pushes the integer value of 4 onto the evaluation stack as an int32.
+        public static readonly OpCode Ldc_I4_4;
+        //
+        // Summary:
+        //     Pushes the integer value of 5 onto the evaluation stack as an int32.
+        public static readonly OpCode Ldc_I4_5;
+        //
+        // Summary:
+        //     Pushes the integer value of 6 onto the evaluation stack as an int32.
+        public static readonly OpCode Ldc_I4_6;
+        //
+        // Summary:
+        //     Pushes the integer value of 7 onto the evaluation stack as an int32.
+        public static readonly OpCode Ldc_I4_7;
+        //
+        // Summary:
+        //     Pushes the integer value of 8 onto the evaluation stack as an int32.
+        public static readonly OpCode Ldc_I4_8;
+        //
+        // Summary:
+        //     Pushes the integer value of -1 onto the evaluation stack as an int32.
+        public static readonly OpCode Ldc_I4_M1;
+        //
+        // Summary:
+        //     Pushes the supplied int8 value onto the evaluation stack as an int32, short
+        //     form.
+        public static readonly OpCode Ldc_I4_S;
+        //
+        // Summary:
+        //     Pushes a supplied value of type int64 onto the evaluation stack as an int64.
+        public static readonly OpCode Ldc_I8;
+        //
+        // Summary:
+        //     Pushes a supplied value of type float32 onto the evaluation stack as type
+        //     F (float).
+        public static readonly OpCode Ldc_R4;
+        //
+        // Summary:
+        //     Pushes a supplied value of type float64 onto the evaluation stack as type
+        //     F (float).
+        public static readonly OpCode Ldc_R8;
+        //
+        // Summary:
+        //     Loads the element at a specified array index onto the top of the evaluation
+        //     stack as the type specified in the instruction.
+        public static readonly OpCode Ldelem;
+        //
+        // Summary:
+        //     Loads the element with type natural int at a specified array index onto the
+        //     top of the evaluation stack as a natural int.
+        public static readonly OpCode Ldelem_I;
+        //
+        // Summary:
+        //     Loads the element with type int8 at a specified array index onto the top
+        //     of the evaluation stack as an int32.
+        public static readonly OpCode Ldelem_I1;
+        //
+        // Summary:
+        //     Loads the element with type int16 at a specified array index onto the top
+        //     of the evaluation stack as an int32.
+        public static readonly OpCode Ldelem_I2;
+        //
+        // Summary:
+        //     Loads the element with type int32 at a specified array index onto the top
+        //     of the evaluation stack as an int32.
+        public static readonly OpCode Ldelem_I4;
+        //
+        // Summary:
+        //     Loads the element with type int64 at a specified array index onto the top
+        //     of the evaluation stack as an int64.
+        public static readonly OpCode Ldelem_I8;
+        //
+        // Summary:
+        //     Loads the element with type float32 at a specified array index onto the top
+        //     of the evaluation stack as type F (float).
+        public static readonly OpCode Ldelem_R4;
+        //
+        // Summary:
+        //     Loads the element with type float64 at a specified array index onto the top
+        //     of the evaluation stack as type F (float).
+        public static readonly OpCode Ldelem_R8;
+        //
+        // Summary:
+        //     Loads the element containing an object reference at a specified array index
+        //     onto the top of the evaluation stack as type O (object reference).
+        public static readonly OpCode Ldelem_Ref;
+        //
+        // Summary:
+        //     Loads the element with type unsigned int8 at a specified array index onto
+        //     the top of the evaluation stack as an int32.
+        public static readonly OpCode Ldelem_U1;
+        //
+        // Summary:
+        //     Loads the element with type unsigned int16 at a specified array index onto
+        //     the top of the evaluation stack as an int32.
+        public static readonly OpCode Ldelem_U2;
+        //
+        // Summary:
+        //     Loads the element with type unsigned int32 at a specified array index onto
+        //     the top of the evaluation stack as an int32.
+        public static readonly OpCode Ldelem_U4;
+        //
+        // Summary:
+        //     Loads the address of the array element at a specified array index onto the
+        //     top of the evaluation stack as type & (managed pointer).
+        public static readonly OpCode Ldelema;
+        //
+        // Summary:
+        //     Finds the value of a field in the object whose reference is currently on
+        //     the evaluation stack.
+        public static readonly OpCode Ldfld;
+        //
+        // Summary:
+        //     Finds the address of a field in the object whose reference is currently on
+        //     the evaluation stack.
+        public static readonly OpCode Ldflda;
+        //
+        // Summary:
+        //     Pushes an unmanaged pointer (type natural int) to the native code implementing
+        //     a specific method onto the evaluation stack.
+        public static readonly OpCode Ldftn;
+        //
+        // Summary:
+        //     Loads a value of type natural int as a natural int onto the evaluation stack
+        //     indirectly.
+        public static readonly OpCode Ldind_I;
+        //
+        // Summary:
+        //     Loads a value of type int8 as an int32 onto the evaluation stack indirectly.
+        public static readonly OpCode Ldind_I1;
+        //
+        // Summary:
+        //     Loads a value of type int16 as an int32 onto the evaluation stack indirectly.
+        public static readonly OpCode Ldind_I2;
+        //
+        // Summary:
+        //     Loads a value of type int32 as an int32 onto the evaluation stack indirectly.
+        public static readonly OpCode Ldind_I4;
+        //
+        // Summary:
+        //     Loads a value of type int64 as an int64 onto the evaluation stack indirectly.
+        public static readonly OpCode Ldind_I8;
+        //
+        // Summary:
+        //     Loads a value of type float32 as a type F (float) onto the evaluation stack
+        //     indirectly.
+        public static readonly OpCode Ldind_R4;
+        //
+        // Summary:
+        //     Loads a value of type float64 as a type F (float) onto the evaluation stack
+        //     indirectly.
+        public static readonly OpCode Ldind_R8;
+        //
+        // Summary:
+        //     Loads an object reference as a type O (object reference) onto the evaluation
+        //     stack indirectly.
+        public static readonly OpCode Ldind_Ref;
+        //
+        // Summary:
+        //     Loads a value of type unsigned int8 as an int32 onto the evaluation stack
+        //     indirectly.
+        public static readonly OpCode Ldind_U1;
+        //
+        // Summary:
+        //     Loads a value of type unsigned int16 as an int32 onto the evaluation stack
+        //     indirectly.
+        public static readonly OpCode Ldind_U2;
+        //
+        // Summary:
+        //     Loads a value of type unsigned int32 as an int32 onto the evaluation stack
+        //     indirectly.
+        public static readonly OpCode Ldind_U4;
+        //
+        // Summary:
+        //     Pushes the number of elements of a zero-based, one-dimensional array onto
+        //     the evaluation stack.
+        public static readonly OpCode Ldlen;
+        //
+        // Summary:
+        //     Loads the local variable at a specific index onto the evaluation stack.
+        public static readonly OpCode Ldloc;
+        //
+        // Summary:
+        //     Loads the local variable at index 0 onto the evaluation stack.
+        public static readonly OpCode Ldloc_0;
+        //
+        // Summary:
+        //     Loads the local variable at index 1 onto the evaluation stack.
+        public static readonly OpCode Ldloc_1;
+        //
+        // Summary:
+        //     Loads the local variable at index 2 onto the evaluation stack.
+        public static readonly OpCode Ldloc_2;
+        //
+        // Summary:
+        //     Loads the local variable at index 3 onto the evaluation stack.
+        public static readonly OpCode Ldloc_3;
+        //
+        // Summary:
+        //     Loads the local variable at a specific index onto the evaluation stack, short
+        //     form.
+        public static readonly OpCode Ldloc_S;
+        //
+        // Summary:
+        //     Loads the address of the local variable at a specific index onto the evaluation
+        //     stack.
+        public static readonly OpCode Ldloca;
+        //
+        // Summary:
+        //     Loads the address of the local variable at a specific index onto the evaluation
+        //     stack, short form.
+        public static readonly OpCode Ldloca_S;
+        //
+        // Summary:
+        //     Pushes a null reference (type O) onto the evaluation stack.
+        public static readonly OpCode Ldnull;
+        //
+        // Summary:
+        //     Copies the value type object pointed to by an address to the top of the evaluation
+        //     stack.
+        public static readonly OpCode Ldobj;
+        //
+        // Summary:
+        //     Pushes the value of a static field onto the evaluation stack.
+        public static readonly OpCode Ldsfld;
+        //
+        // Summary:
+        //     Pushes the address of a static field onto the evaluation stack.
+        public static readonly OpCode Ldsflda;
+        //
+        // Summary:
+        //     Pushes a new object reference to a string literal stored in the metadata.
+        public static readonly OpCode Ldstr;
+        //
+        // Summary:
+        //     Converts a metadata token to its runtime representation, pushing it onto
+        //     the evaluation stack.
+        public static readonly OpCode Ldtoken;
+        //
+        // Summary:
+        //     Pushes an unmanaged pointer (type natural int) to the native code implementing
+        //     a particular virtual method associated with a specified object onto the evaluation
+        //     stack.
+        public static readonly OpCode Ldvirtftn;
+        //
+        // Summary:
+        //     Exits a protected region of code, unconditionally transferring control to
+        //     a specific target instruction.
+        public static readonly OpCode Leave;
+        //
+        // Summary:
+        //     Exits a protected region of code, unconditionally transferring control to
+        //     a target instruction (short form).
+        public static readonly OpCode Leave_S;
+        //
+        // Summary:
+        //     Allocates a certain number of bytes from the local dynamic memory pool and
+        //     pushes the address (a transient pointer, type *) of the first allocated byte
+        //     onto the evaluation stack.
+        public static readonly OpCode Localloc;
+        //
+        // Summary:
+        //     Pushes a typed reference to an instance of a specific type onto the evaluation
+        //     stack.
+        public static readonly OpCode Mkrefany;
+        //
+        // Summary:
+        //     Multiplies two values and pushes the result on the evaluation stack.
+        public static readonly OpCode Mul;
+        //
+        // Summary:
+        //     Multiplies two integer values, performs an overflow check, and pushes the
+        //     result onto the evaluation stack.
+        public static readonly OpCode Mul_Ovf;
+        //
+        // Summary:
+        //     Multiplies two unsigned integer values, performs an overflow check, and pushes
+        //     the result onto the evaluation stack.
+        public static readonly OpCode Mul_Ovf_Un;
+        //
+        // Summary:
+        //     Negates a value and pushes the result onto the evaluation stack.
+        public static readonly OpCode Neg;
+        //
+        // Summary:
+        //     Pushes an object reference to a new zero-based, one-dimensional array whose
+        //     elements are of a specific type onto the evaluation stack.
+        public static readonly OpCode Newarr;
+        //
+        // Summary:
+        //     Creates a new object or a new instance of a value type, pushing an object
+        //     reference (type O) onto the evaluation stack.
+        public static readonly OpCode Newobj;
+        //
+        // Summary:
+        //     Fills space if opcodes are patched. No meaningful operation is performed
+        //     although a processing cycle can be consumed.
+        public static readonly OpCode Nop;
+        //
+        // Summary:
+        //     Computes the bitwise complement of the integer value on top of the stack
+        //     and pushes the result onto the evaluation stack as the same type.
+        public static readonly OpCode Not;
+        //
+        // Summary:
+        //     Compute the bitwise complement of the two integer values on top of the stack
+        //     and pushes the result onto the evaluation stack.
+        public static readonly OpCode Or;
+        //
+        // Summary:
+        //     Removes the value currently on top of the evaluation stack.
+        public static readonly OpCode Pop;
+        //
+        // Summary:
+        //     This is a reserved instruction.
+        public static readonly OpCode Prefix1;
+        //
+        // Summary:
+        //     This is a reserved instruction.
+        public static readonly OpCode Prefix2;
+        //
+        // Summary:
+        //     This is a reserved instruction.
+        public static readonly OpCode Prefix3;
+        //
+        // Summary:
+        //     This is a reserved instruction.
+        public static readonly OpCode Prefix4;
+        //
+        // Summary:
+        //     This is a reserved instruction.
+        public static readonly OpCode Prefix5;
+        //
+        // Summary:
+        //     This is a reserved instruction.
+        public static readonly OpCode Prefix6;
+        //
+        // Summary:
+        //     This is a reserved instruction.
+        public static readonly OpCode Prefix7;
+        //
+        // Summary:
+        //     This is a reserved instruction.
+        public static readonly OpCode Prefixref;
+        //
+        // Summary:
+        //     Specifies that the subsequent array address operation performs no type check
+        //     at run time, and that it returns a managed pointer whose mutability is restricted.
+        public static readonly OpCode Readonly;
+        //
+        // Summary:
+        //     Retrieves the type token embedded in a typed reference.
+        public static readonly OpCode Refanytype;
+        //
+        // Summary:
+        //     Retrieves the address (type &) embedded in a typed reference.
+        public static readonly OpCode Refanyval;
+        //
+        // Summary:
+        //     Divides two values and pushes the remainder onto the evaluation stack.
+        public static readonly OpCode Rem;
+        //
+        // Summary:
+        //     Divides two unsigned values and pushes the remainder onto the evaluation
+        //     stack.
+        public static readonly OpCode Rem_Un;
+        //
+        // Summary:
+        //     Returns from the current method, pushing a return value (if present) from
+        //     the callee's evaluation stack onto the caller's evaluation stack.
+        public static readonly OpCode Ret;
+        //
+        // Summary:
+        //     Rethrows the current exception.
+        public static readonly OpCode Rethrow;
+        //
+        // Summary:
+        //     Shifts an integer value to the left (in zeroes) by a specified number of
+        //     bits, pushing the result onto the evaluation stack.
+        public static readonly OpCode Shl;
+        //
+        // Summary:
+        //     Shifts an integer value (in sign) to the right by a specified number of bits,
+        //     pushing the result onto the evaluation stack.
+        public static readonly OpCode Shr;
+        //
+        // Summary:
+        //     Shifts an unsigned integer value (in zeroes) to the right by a specified
+        //     number of bits, pushing the result onto the evaluation stack.
+        public static readonly OpCode Shr_Un;
+        //
+        // Summary:
+        //     Pushes the size, in bytes, of a supplied value type onto the evaluation stack.
+        public static readonly OpCode Sizeof;
+        //
+        // Summary:
+        //     Stores the value on top of the evaluation stack in the argument slot at a
+        //     specified index.
+        public static readonly OpCode Starg;
+        //
+        // Summary:
+        //     Stores the value on top of the evaluation stack in the argument slot at a
+        //     specified index, short form.
+        public static readonly OpCode Starg_S;
+        //
+        // Summary:
+        //     Replaces the array element at a given index with the value on the evaluation
+        //     stack, whose type is specified in the instruction.
+        public static readonly OpCode Stelem;
+        //
+        // Summary:
+        //     Replaces the array element at a given index with the natural int value on
+        //     the evaluation stack.
+        public static readonly OpCode Stelem_I;
+        //
+        // Summary:
+        //     Replaces the array element at a given index with the int8 value on the evaluation
+        //     stack.
+        public static readonly OpCode Stelem_I1;
+        //
+        // Summary:
+        //     Replaces the array element at a given index with the int16 value on the evaluation
+        //     stack.
+        public static readonly OpCode Stelem_I2;
+        //
+        // Summary:
+        //     Replaces the array element at a given index with the int32 value on the evaluation
+        //     stack.
+        public static readonly OpCode Stelem_I4;
+        //
+        // Summary:
+        //     Replaces the array element at a given index with the int64 value on the evaluation
+        //     stack.
+        public static readonly OpCode Stelem_I8;
+        //
+        // Summary:
+        //     Replaces the array element at a given index with the float32 value on the
+        //     evaluation stack.
+        public static readonly OpCode Stelem_R4;
+        //
+        // Summary:
+        //     Replaces the array element at a given index with the float64 value on the
+        //     evaluation stack.
+        public static readonly OpCode Stelem_R8;
+        //
+        // Summary:
+        //     Replaces the array element at a given index with the object ref value (type
+        //     O) on the evaluation stack.
+        public static readonly OpCode Stelem_Ref;
+        //
+        // Summary:
+        //     Replaces the value stored in the field of an object reference or pointer
+        //     with a new value.
+        public static readonly OpCode Stfld;
+        //
+        // Summary:
+        //     Stores a value of type natural int at a supplied address.
+        public static readonly OpCode Stind_I;
+        //
+        // Summary:
+        //     Stores a value of type int8 at a supplied address.
+        public static readonly OpCode Stind_I1;
+        //
+        // Summary:
+        //     Stores a value of type int16 at a supplied address.
+        public static readonly OpCode Stind_I2;
+        //
+        // Summary:
+        //     Stores a value of type int32 at a supplied address.
+        public static readonly OpCode Stind_I4;
+        //
+        // Summary:
+        //     Stores a value of type int64 at a supplied address.
+        public static readonly OpCode Stind_I8;
+        //
+        // Summary:
+        //     Stores a value of type float32 at a supplied address.
+        public static readonly OpCode Stind_R4;
+        //
+        // Summary:
+        //     Stores a value of type float64 at a supplied address.
+        public static readonly OpCode Stind_R8;
+        //
+        // Summary:
+        //     Stores a object reference value at a supplied address.
+        public static readonly OpCode Stind_Ref;
+        //
+        // Summary:
+        //     Pops the current value from the top of the evaluation stack and stores it
+        //     in a the local variable list at a specified index.
+        public static readonly OpCode Stloc;
+        //
+        // Summary:
+        //     Pops the current value from the top of the evaluation stack and stores it
+        //     in a the local variable list at index 0.
+        public static readonly OpCode Stloc_0;
+        //
+        // Summary:
+        //     Pops the current value from the top of the evaluation stack and stores it
+        //     in a the local variable list at index 1.
+        public static readonly OpCode Stloc_1;
+        //
+        // Summary:
+        //     Pops the current value from the top of the evaluation stack and stores it
+        //     in a the local variable list at index 2.
+        public static readonly OpCode Stloc_2;
+        //
+        // Summary:
+        //     Pops the current value from the top of the evaluation stack and stores it
+        //     in a the local variable list at index 3.
+        public static readonly OpCode Stloc_3;
+        //
+        // Summary:
+        //     Pops the current value from the top of the evaluation stack and stores it
+        //     in a the local variable list at index (short form).
+        public static readonly OpCode Stloc_S;
+        //
+        // Summary:
+        //     Copies a value of a specified type from the evaluation stack into a supplied
+        //     memory address.
+        public static readonly OpCode Stobj;
+        //
+        // Summary:
+        //     Replaces the value of a static field with a value from the evaluation stack.
+        public static readonly OpCode Stsfld;
+        //
+        // Summary:
+        //     Subtracts one value from another and pushes the result onto the evaluation
+        //     stack.
+        public static readonly OpCode Sub;
+        //
+        // Summary:
+        //     Subtracts one integer value from another, performs an overflow check, and
+        //     pushes the result onto the evaluation stack.
+        public static readonly OpCode Sub_Ovf;
+        //
+        // Summary:
+        //     Subtracts one unsigned integer value from another, performs an overflow check,
+        //     and pushes the result onto the evaluation stack.
+        public static readonly OpCode Sub_Ovf_Un;
+        //
+        // Summary:
+        //     Implements a jump table.
+        public static readonly OpCode Switch;
+        //
+        // Summary:
+        //     Performs a postfixed method call instruction such that the current method's
+        //     stack frame is removed before the actual call instruction is executed.
+        public static readonly OpCode Tailcall;
+        //
+        // Summary:
+        //     Throws the exception object currently on the evaluation stack.
+        public static readonly OpCode Throw;
+        //
+        // Summary:
+        //     Indicates that an address currently atop the evaluation stack might not be
+        //     aligned to the natural size of the immediately following ldind, stind, ldfld,
+        //     stfld, ldobj, stobj, initblk, or cpblk instruction.
+        public static readonly OpCode Unaligned;
+        //
+        // Summary:
+        //     Converts the boxed representation of a value type to its unboxed form.
+        public static readonly OpCode Unbox;
+        //
+        // Summary:
+        //     Converts the boxed representation of a type specified in the instruction
+        //     to its unboxed form.
+        public static readonly OpCode Unbox_Any;
+        //
+        // Summary:
+        //     Specifies that an address currently atop the evaluation stack might be volatile,
+        //     and the results of reading that location cannot be cached or that multiple
+        //     stores to that location cannot be suppressed.
+        public static readonly OpCode Volatile;
+        //
+        // Summary:
+        //     Computes the bitwise XOR of the top two values on the evaluation stack, pushing
+        //     the result onto the evaluation stack.
+        public static readonly OpCode Xor;
+
+        // Summary:
+        //     Returns true or false if the supplied opcode takes a single byte argument.
+        //
+        // Parameters:
+        //   inst:
+        //     An instance of an Opcode object.
+        //
+        // Returns:
+        //     True or false.
+        public static bool TakesSingleByteArgument( OpCode inst );
+    }
+}
+
+
+
+
+
+// arithmetic operators: Exp1 op Exp2
+        [Exp1]
+        [Exp2]
+        [op]
+
+// Exp1 && Exp2 (using short-circuiting)
+        [Exp1]
+        dup
+        br.false L1
+        pop
+        [Exp2]
+    L1:               
+
+// Exp1 || Exp2 (using short-circuiting)
+        [Exp1]
+        dup
+        br.true l1
+        pop
+        [Exp2]
+    L1:
+
+
+// Assuming both arguments are already pushed on the stack, emit the opcodes
+    // for the corresponding binary op
+
+
+
+
+
+
+
+Some notes on bytecodes:
+
+	table of identifiers which have addresses
+	
+	field_selector:
+			generate  : 9     y  Add y to the element on top of the stack,
+			where y is address or integer.
+
+
+else begin  { array selector }
+          if sy <> lbrack then error(11);
+          if v.typ=strngs then begin
+            insymbol;
+            expression(fsys+[rbrack],x);
+            if x.typ<>ints then error(34) else emit(165);	// 165 -  Index string
+            v.typ := chars
+          end else
+
+
+
+// arrays
+repeat
+            insymbol;
+            expression(fsys+[comma,rbrack], x);
+            if v.typ <> arrays
+            then error(28)
+            else begin
+              a := v.ref;
+              if atab[a].inxtyp <> x.typ
+              then error(26)
+              else if atab[a].elsize = 1
+                   then emit1(20,a)
+                   else emit1(21,a);
+/*
+ 20     y  Indexed fetch (element size > 1)
+ 21     y  Indexed fetch
+*/
+              v.typ := atab[a].eltyp;
+              v.ref := atab[a].elref
+            end
+          until sy <> comma;
+if sy = rbrack
+          then insymbol
+          else begin
+            error(12);
+            if sy = rparent then insymbol
+          end
+        end
+      until not (sy in [lbrack,lparent,period]);
+
+
+
+
+
+
+Compile-time assertions
+
+1) array-indexing out of range.
+
+//
+// C_ASSERT() can be used to perform many compile-time assertions:
+//            type sizes, field offsets, etc.
+//
+// An assertion failure results in error C2118: negative subscript.
+//
+
+#define C_ASSERT(e) typedef char __C_ASSERT__[(e)?1:-1]
+
+
+
+
+Language notes:
+
+
+	switch ( token ) {	
+
+	case IsFunction( token ):
+
+	}
+
+
+
+
+
+  Every statement returns a value ( values ):
+
+  {
+     int a = 1, b = 2;
+     get a, b;
+  }
+ 
+  will return the values of a and b.
+
+( int, char, real  ) 	SomeFunction( int r; char m; string s1, s2 ) 
+{
+  int i; 
+  char c; 
+  real f;
+// do something ...
+   return  i, c, f;	// or "return 1, 'A', 65 535.999;"
+}
+
+
+
+delete	ptr1, ptr2, ptr3;
+
+
+Automatic garbage collection  may be switched on/off.
+
+
+
+Unions.
+
+  In Pascal :
+  
+ var  union : record
+	   case  type : SomeType of
+		
+		someValue:  real;
+		someValue2: string;
+		someValue3: record ...
+		                   ...
+	end;
+
+
+In Basya :
+
+  C-style unions + the following definition is possible:
+
+ union TUnion {
+
+     int    type :
+  case  0..5
+	{
+	...
+  	}
+   case 6, 56 
+	{
+	...
+	}
+   default 
+	{
+	...
+	}
+};
+
+
+
+
+
+
+
+
+
+enum TokenType {
+   TT_ID,
+   TT_CHAR,
+  ...
+};
+
+enum Tokens {
+	// keywords
+	T_CHAR,
+	T_INT,
+	...
+	// punctuation & operators
+	...
+};
+
+
+(TokenType | Tokens)   Lexer::ReadNextToken() {
+ ...
+return TokenType.TT_ID; ...
+...
+return Tokens.T_INT;
+}
+
+
+
+Templates:
+
+T  Max<type T>( const T t1, t2 ) {
+  ...
+}
+
+or
+
+T Max<T>( const T t1, t2 ) { ... }
+
+
+
+
+
+if methods, it will be possible to know who is calling this method.
+
+
+
+
+
+
+   if ( expression ) | { stmts; }
+stmt; | { stmts; }
+ else stmt;
+  
+  Ex.:
+
+  if { int a, b;  i > 0 }
+  {
+// statements
+  } else {
+// statements
+  }
+
+The vars a and b are only visible in the scope of if-statement.
+
+  if ( int res = 5 + i ) {
+// do something with res
+  }
+// res is out of scope here
+
+
+//! this is considered unnecessary:
+ if ( 0 <= x <= 45 ) {
+// stmts
+ }
+
+
+Example:
+{
+  stmt1;
+  stmt2;
+ // ....
+  last_stmt;
+}
+ will return the value of the last stmt.
+
+
+
+
+for ( ... ;  ... ; ... ) {
+}
+
+
+for ( {... }; {... }; {...} )
+  ;
+
+
+for ( int i in (1..7) )
+  ...
+
+for ( int i in set( 1.. 7 ) )   // i will iterate sequentially:  1, 2, 3, 4, 5, 6, 7.
+  ...
+
+
+
+
+Definition of sets:
+
+type s1 = ( 1, 2, 3, 4, ... , 54, 2 );
+
+// set of natural numbers
+type N = ( int x = ( 1, ... ) ); 
+
+type R = ( real x );
+
+type SomeSet = ( int x = ( 1, ... );  x % 2 == 0 );  // x : 1, 2, 4, 8, 16, 32, ... .
+
+type Set = ( UserType  u;  u.num >0, u.r == -1, u.low_index in SomeSet );
+
+
+
+if ( int i in SomeSet ) 
+  ...
+
+
+
+
+
+for ( int i in set( 1, 2, 4, 5, 54, 22 ) )
+  ...
+
+
+for ( char c in set( 'A'...'z' ) ) 
+  ...
+
+
+
+type Car {
+// type definition
+} // here ';' is allowed, but not necessary.
+
+
+type Alias_Type = Car;
+
+
+
+
+
+type Weekdays = ( Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday );
+
+or
+
+type Weekdays = set ( Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday );
+
+
+
+
+// begin comment:  
+            	!!!	this should not be in the language !!!
+for ( int i = 1  to 54 ) 
+  stmt;
+What are other uses of the keyword "to" ?
+// end
+
+
+
+
+
+
+Each object in the program has a scope and can be hidden.
+
+Access specifiers : private, public, protected, etc.. may be replaced by the visibility statement:
+
+
+type Car {
+visibility 0:
+  ...
+  void	Go();
+  ...
+visibility 1:
+  real	speed;
+  int	number;
+  ...
+};
+
+It's too long, though.
+
+
+type Car {
+public void  Go();
+...
+private real speed;
+private int	  number;
+}
+
+
+
+interface IRobot {
+  ...
+}
+
+
+type Robot1 : IRobot, Car {
+...
+}
+
+
+
+
+
+
+// New words:
+	Prelate
+esplanade
+
+
+    Notes on a future compiler.
+    
+  Access to members of some class may only be granted to some privileged classes.
+  Assertions on parameters and so on, causing compile-errors if something goes wrong.
+  
+  The parameter t must not be equal to zero.
+  void foo( Token *t ) {
+    ...
+  }
+  
+  Costructors may return values:
+
+  Token t = "656565";
+  
+  m = Token( "void" );  
+
+
+  There will be unit / module declarations instread of namespaces.
+
+
+There will be a universal type "void" which will be capable of taking values of all types ( like in Icon ):
+void	v;
+v = 32;
+v = Token( "void" );
+v = "lkfjlajflk;af";
+v = -21.340;
+v = 43E523;
+etc..
+
+
+
+//===================================================
+//
+//===================================================
+
+#ifndef __SYMTYPES_H__
+#define __SYMTYPES_H__
+
+namespace Core {
+
+	//------------------------------------------------------
+	// This enum describes all the kinds of symbol types.
+	//------------------------------------------------------
+	enum TYPE_ID {
+
+		// The fundamental types that are built into the Basya language
+		//
+		BOOL,
+		CHAR,
+		SHORT,
+		INT,
+		LONG,
+		FLOAT,
+		DOUBLE,
+		STRING,
+
+		// User-defined data types
+		//
+		FUNCTION,
+		ENUM,
+		INTERFACE,
+		CLASS,
+
+		//POINTER,
+		REFERENCE,
+
+		GENERIC,	// template parameter
+
+		UNRESOLVED,	// for creating temporary data and reporting errors
+	};
+
+	// types used for collecting decl-specifiers
+
+	// only one of these may be specified
+	enum STORAGE_CLASS {
+		AUTO,
+		STATIC,
+		REGISTER,
+		TYPEDEF,
+		EXTERN,
+		MUTABLE,
+		NO_STORAGE_CLASS,
+	};
+
+	// only one of these may be specified
+	enum SPECIFIER {
+		CONST,
+		VOLATILE,
+		FRIEND,
+		INLINE,
+		VIRTUAL,
+		EXPLICIT,
+		UNALIGNED,
+		NO_SPECIFIER,
+	};
+
+	// only certain combinations may be specified
+	enum SCALAR_TYPE {
+		CHAR,
+		INT,
+		LONG,
+		FLOAT,
+		DOUBLE,
+		SIGNED,
+		UNSIGNED,
+		SHORT,
+		VOID,
+		SEGMENT,
+		BOOL,
+		INT64,
+		NULL_STYPE,
+	};
+
+}//end namespace Debug
+
+#endif // !__SYMTYPES_H__
+
+
+
+
+
+
+
+
+
+
+Expression syntax and associativity, grouped by precedence Group
+
+Primary (highest precedence)
+ Left-to-right
+ literal
+
+this(
+
+expr)
+
+name
+
+::name
+
+class-or-namespace
+
+:: name
+ 
+
+
+Postfix
+ Left-to-right
+ pointer [expr]
+
+expr
+
+( expr, ...)
+
+type( expr, ...)
+
+object.member
+
+pointer ->member
+
+cast_keyword <type >(expr )
+
+typeid(expr )
+
+typeid(type)
+
+lvalue++
+
+lvalue--
+ 
+
+
+Unary
+ Right-to-left
+ ++lvalue
+
+--lvalue
+
+~expr
+
+compl expr
+
+! expr
+
+not expr
+
++ expr
+
+- expr
+
+* pointer
+
+& lvalue
+
+sizeof expr
+
+sizeof( type)
+
+new-expr
+
+delete-expr
+ 
+Cast
+ Right-to-left
+ ( type ) expr
+ 
+Pointer to Member
+ Left-to-right
+ object .* expr
+
+pointer ->* expr
+ 
+
+
+Multiplicative
+ Left-to-right
+ expr *expr
+
+expr / expr
+
+expr % expr
+ 
+
+
+Additive
+ Left-to-right
+ expr + expr
+
+expr - expr
+ 
+
+
+Shift
+ Left-to-right
+ expr << expr
+
+expr >> expr
+ 
+
+
+Relational
+ Left-to-right
+ expr <
+
+exprexpr > expr
+
+expr <= expr
+
+expr >= expr
+ 
+
+
+Equality
+ Left-to-right
+ expr == expr
+
+expr != expr
+
+expr not_eq expr
+ 
+
+
+Bitwise And
+ Left-to-right
+ expr & expr
+
+expr bitand expr
+ 
+
+
+Bitwise Exclusive Or
+ Left-to-right
+ expr ^ expr
+
+expr xor expr
+ 
+
+
+Bitwise Inclusive Or
+ Left-to-right
+ expr | expr
+
+expr bitor expr
+ 
+
+
+Logical And
+ Left-to-right
+ expr && expr
+
+expr and expr
+ 
+
+
+Logical Or
+ Left-to-right
+ expr || expr
+
+expr or expr
+ 
+
+
+Conditional
+ Right-to-left
+ expr ? expr : expr
+ 
+
+
+Assignment
+ Right-to-left
+ lvalue = expr
+
+lvalue op= expr
+
+throw expr
+
+throw
+ 
+Comma (lowest precedence)
+ Left-to-right
+ expr , expr
+ 
+
+//******************************************
+Indirection operator (*)
+
+Address-of operator (&)
+
+Unary plus operator (+)
+
+Unary negation operator (–)
+
+Logical negation operator (!)
+
+One's complement operator (~)
+
+Prefix increment operator (++)
+
+Prefix decrement operator (––)
+
+Cast Operator ()
+
+sizeof operator
+
+__uuidof operator
+
+__alignof operator
+
+new operator
+
+delete operator
+
+
+Notes on a future interpreter/*compiler*/ and IDE.
+1) Nearly all of the windows will be semitransparent 
+( transparency can be changed ).
+2) The future compiler will be written in VC++.
+//3) It'll be a compiler for a script language.
+3) It'll be an interpreter ( or, maybe, you'll be able to interpret the program
+( in debugging mode ) and then compile ).
+4) The user will be able to create his own code snippets and templates
+( insertion places will be adjusted automatically ).
+5) Syntax checking
+6) Intellisense
+7) Switch to Turbo Pascal's IDE ( modern )
+8) Some useful features as in Free Pascal's IDE
+9) Instead of traditional identifiers, users can insert bitmaps, flow-charts
+and draw in the code
+10) The IDE's obstrusiness can be adjusted
+11) It'll probably be an interpreter
+12) Built using MFC and DirectX
+13) Files with code will have the extension ".ivt"
+14) Mixture of Java, C++, Pascal and Basic
+15) Comments:
+//
+(*
+/*
+[[
+16) nested functions supported
+17) files with code cannot be opened ( read ) outside the IDE
+18) IDE will do smart formatting and you'll choose style of formatting your code
+( dialog window with options:
+Microsoft
+Id Software
+...
+none
+
+19) when writing 
+out << 
+the hints will appear
+20) you can overload operators and bitmap symbols as you wish
+overloadable operators:
++
+-
+/
+*
+->
++=
+*=
+...
+^
+$
+@
+==
+!=
+||
+|
+&
+??
+?
+&&
+::
+|||
+&&&
+***
+|*|
+|^|
+(
+)
+(|)
+%
+(@)
+(;-)
+^^^
+(!)
+(->)
+(:-#]
+[##]
+[#]
+[@]
+~
+[~]
+(~)
+(")
+["]
+
+21) each bitmap will have its id ( 256-bit depth colour, arbitrary shape )
+22) you can select text arbitrary  
+
+23)
+
+this->method   ========  .method
+
+24) There will be elif operator
+
+if ...
+elif
+elif
+
+else if
+
+elif
+
+else
+...
+
+25) class Sclass1 {
+	int a, b, c;
+void func_1( void );
+}
+
+Sclass..void func_1( void ) {
+	.a = 4;
+	.c = .b = .a;
+}
+
+period . instead of this->
+
+26) ret instead of return
+
+27) there will probably be types, not classes:
+type Sclass1 {
+ ...
+}
+
+type SMyInteger is int   - now SMyInteger is the same as int
+
+
+28) Preprocessor:
+#macro  ERROR( str, file )   MessageBoxEx( ...     /
+			... /
+			...
+
+29) Templates:
+pattern< type T >
+type  TMyType1 {
+T  a;
+...
+
+int  MyFunc( int a, int b );
+}
+
+TMyType1..int  MyFunc( int a, int b ) {
+}
+
+30) Curly braces will be highlighted and matched when the cursor flies
+over them
+
+31) Warning:  if( A = b ) { ...
+
+32) A cool debugger will be integrated into the IDE.
+
+33) There will be learning mode, when hints and half-transparent dialog
+based hints will appear over keywords ( with examples and so forth ).
+
+34) There'll be no switch-fallthrough.
+
+
+
+
+AST_Node* __::GetSimplifiedNode() {
+	return 0;
+}
+
+bool __::IsEqual( const AST_Node * other ) const {
+	return false;
+}
+
+bool __::IsSimilar( const AST_Node * other ) const {
+	return false;
+}
+	
+bool __::IsConstant() const {
+	return false;
+}
+
+bool __::IsInvariant() const {
+	return false;
+}
+
+bool __::HasSideEffects() const {
+	return false;
+}
+	
+bool __::ConvertToTypeOf( Expression * other ) {
+	return false;
+}
+
+bool __::ConvertToType( TYPE_KIND  type ) {
+	return false;
+}
+
+void __::Resolve() {
+}
+
+void __::Resolve_Pass1() {
+}
+
+void __::Resolve_Pass2() {
+}
+
+void __::ResolveAsLHS() {
+}
+
+void __::ResolveAsRHS() {
+}
+
+AST_Node*  __::GetResolvedNode() {
+	return 0;
+}
+
+Expression*  __::GetResolvedExpression() {
+	return 0;
+}
+
+void  __::Generate() {
+}
+
+void __::GenerateAsLHS() {
+}
+
+void __::GenerateAsRHS() {
+}
+
+void __::GenerateAsExpression() {
+}
+
+void __::GenerateAsStatement() {
+}
+
+void __::GenerateAddressOf() {
+}
+
+void __::GenerateBeforeAssignment() {
+}
+
+void __::GenerateAfterAssignment() {
+}
+
+void __::Print() const {
+}
+
+AST_TYPE __::GetNodeType() const {
+	return AST_TYPE::nUnresolved;
+}
+
+TYPE_KIND __::GetTypeKind() const {
+	return UNRESOLVED;
+}
+
+
+
+
+
+
+
+
+
+	Static constructors are invoked only once:
+	
+	enum Keywords {
+		static Keywords() {
+		  m_hash = new HashTable ...
+		  ...
+		
+	}
+	
+	Static classes are "singletons" ( there can only be one instance of such a class ):
+	
+	static class Singleton {
+		...
+	}
+	
+	Singleton	g_World;
+	
+	
+	#if false
+// if (TestExp) ThenStmt
+        [TestExp]
+        brfalse l1;
+        [ThenStmt]
+    l1:
+     
+// if (TestExp) ThenStmt else ElseStmt
+        [TestExp]
+        brfalse l1;
+        [ThenStmt]
+        br l2;
+    l1:
+        [ElseStmt]
+    l2:
+#endif
+
+
+
+enum TypeKind {
+
+	enum Primitives {
+		char,
+		bool,
+		int,
+		float,
+		double,
+		string
+	}
+	
+	enum ComplexTypes {
+		Enum,
+		Struct,
+		Interface,
+		Class,
+	}
+	
+	Reference,
+}//enum TypeKind
+
+...
+
+if ( token in TypeKind.Primitives ) {
+  ...		
+	
+...
+
+
+
+
+using System;
+using System.Threading;
+using System.Reflection;
+using System.Reflection.Emit;
+
+class EmitWriteLineDemo {
+
+   public static Type CreateDynamicType() {       
+       Type[] ctorParams = new Type[] {typeof(int),
+				   typeof(int)};
+ 	
+       AppDomain myDomain = Thread.GetDomain();
+       AssemblyName myAsmName = new AssemblyName();
+       myAsmName.Name = "MyDynamicAssembly";
+
+       AssemblyBuilder myAsmBuilder = myDomain.DefineDynamicAssembly(
+				      myAsmName, 
+				      AssemblyBuilderAccess.RunAndSave);
+
+       ModuleBuilder pointModule = myAsmBuilder.DefineDynamicModule("PointModule",
+								    "Point.dll");
+
+       TypeBuilder pointTypeBld = pointModule.DefineType("Point",
+					              TypeAttributes.Public);
+
+       FieldBuilder xField = pointTypeBld.DefineField("x", typeof(int),
+                                                      FieldAttributes.Public);
+       FieldBuilder yField = pointTypeBld.DefineField("y", typeof(int), 
+                                                      FieldAttributes.Public);
+
+
+       Type objType = Type.GetType("System.Object"); 
+       ConstructorInfo objCtor = objType.GetConstructor(new Type[0]);
+
+       ConstructorBuilder pointCtor = pointTypeBld.DefineConstructor(
+ 				                   MethodAttributes.Public,
+				                   CallingConventions.Standard,
+				                   ctorParams);
+       ILGenerator ctorIL = pointCtor.GetILGenerator();
+
+
+       // First, you build the constructor.
+       ctorIL.Emit(OpCodes.Ldarg_0);
+       ctorIL.Emit(OpCodes.Call, objCtor);
+       ctorIL.Emit(OpCodes.Ldarg_0);
+       ctorIL.Emit(OpCodes.Ldarg_1);
+       ctorIL.Emit(OpCodes.Stfld, xField); 
+       ctorIL.Emit(OpCodes.Ldarg_0);
+       ctorIL.Emit(OpCodes.Ldarg_2);
+       ctorIL.Emit(OpCodes.Stfld, yField); 
+       ctorIL.Emit(OpCodes.Ret); 
+
+       //  Now, you'll build a method to output some information on the
+       // inside your dynamic class. This method will have the following
+       // definition in C#:
+	//  public void WritePoint()
+      
+       MethodBuilder writeStrMthd = pointTypeBld.DefineMethod(
+        		                     "WritePoint", 
+				             MethodAttributes.Public,
+                                             typeof(void), 
+                                             null);
+
+       
+       ILGenerator writeStrIL = writeStrMthd.GetILGenerator();
+      
+       // The below ILGenerator created demonstrates a few ways to create
+       // string output through STDIN. 
+
+       // ILGenerator.EmitWriteLine(string) will generate a ldstr and a 
+       // call to WriteLine for you.
+
+       writeStrIL.EmitWriteLine("The value of this current instance is:");
+
+       // Here, you will do the hard work yourself. First, you need to create
+       // the string we will be passing and obtain the correct WriteLine overload
+       // for said string. In the below case, you are substituting in two values,
+       // so the chosen overload is Console.WriteLine(string, object, object).
+
+       String inStr = "({0}, {1})";
+       Type[] wlParams = new Type[] {typeof(string),
+				     typeof(object),
+				     typeof(object)};
+
+       // We need the MethodInfo to pass into EmitCall later.
+
+       MethodInfo writeLineMI = typeof(Console).GetMethod(
+					        "WriteLine",
+						wlParams);
+
+       // Push the string with the substitutions onto the stack.
+       // This is the first argument for WriteLine - the string one. 
+
+       writeStrIL.Emit(OpCodes.Ldstr, inStr);
+
+       // Since the second argument is an object, and it corresponds to
+       // to the substitution for the value of our integer field, you 
+       // need to box that field to an object. First, push a reference
+       // to the current instance, and then push the value stored in
+       // field 'x'. We need the reference to the current instance (stored
+       // in local argument index 0) so Ldfld can load from the correct
+       // instance (this one).
+
+       writeStrIL.Emit(OpCodes.Ldarg_0);
+       writeStrIL.Emit(OpCodes.Ldfld, xField);
+
+       // Now, we execute the box opcode, which pops the value of field 'x',
+       // returning a reference to the integer value boxed as an object.
+
+       writeStrIL.Emit(OpCodes.Box, typeof(int));
+
+       // Atop the stack, you'll find our string inStr, followed by a reference
+       // to the boxed value of 'x'. Now, you need to likewise box field 'y'.
+
+       writeStrIL.Emit(OpCodes.Ldarg_0);
+       writeStrIL.Emit(OpCodes.Ldfld, yField);
+       writeStrIL.Emit(OpCodes.Box, typeof(int));
+
+       // Now, you have all of the arguments for your call to
+       // Console.WriteLine(string, object, object) atop the stack:
+       // the string InStr, a reference to the boxed value of 'x', and
+       // a reference to the boxed value of 'y'.
+
+       // Call Console.WriteLine(string, object, object) with EmitCall.
+
+       writeStrIL.EmitCall(OpCodes.Call, writeLineMI, null);
+
+       // Lastly, EmitWriteLine can also output the value of a field
+       // using the overload EmitWriteLine(FieldInfo).
+
+       writeStrIL.EmitWriteLine("The value of 'x' is:");
+       writeStrIL.EmitWriteLine(xField);
+       writeStrIL.EmitWriteLine("The value of 'y' is:");
+       writeStrIL.EmitWriteLine(yField);
+
+       // Since we return no value (void), the the ret opcode will not
+       // return the top stack value.
+
+       writeStrIL.Emit(OpCodes.Ret);
+      
+       return pointTypeBld.CreateType();
+
+   }
+
+   public static void Main() {
+
+      object[] ctorParams = new object[2];
+
+      Console.Write("Enter a integer value for X: "); 
+      string myX = Console.ReadLine();
+      Console.Write("Enter a integer value for Y: "); 
+      string myY = Console.ReadLine();
+
+      Console.WriteLine("---");
+
+      ctorParams[0] = Convert.ToInt32(myX);
+      ctorParams[1] = Convert.ToInt32(myY);
+
+      Type ptType = CreateDynamicType();
+  
+      object ptInstance = Activator.CreateInstance(ptType, ctorParams);
+      ptType.InvokeMember("WritePoint",
+			  BindingFlags.InvokeMethod,
+			  null,
+			  ptInstance,
+			  new object[0]);
+   }
+}
+
+
+ 
+C++  Copy Code 
+using namespace System;
+using namespace System::Threading;
+using namespace System::Reflection;
+using namespace System::Reflection::Emit;
+Type^ CreateDynamicType()
+{
+   array<Type^>^ctorParams = {int::typeid,int::typeid};
+   AppDomain^ myDomain = Thread::GetDomain();
+   AssemblyName^ myAsmName = gcnew AssemblyName;
+   myAsmName->Name = "MyDynamicAssembly";
+   AssemblyBuilder^ myAsmBuilder = myDomain->DefineDynamicAssembly( myAsmName, AssemblyBuilderAccess::RunAndSave );
+   ModuleBuilder^ pointModule = myAsmBuilder->DefineDynamicModule( "PointModule", "Point.dll" );
+   TypeBuilder^ pointTypeBld = pointModule->DefineType( "Point", TypeAttributes::Public );
+   FieldBuilder^ xField = pointTypeBld->DefineField( "x", int::typeid, FieldAttributes::Public );
+   FieldBuilder^ yField = pointTypeBld->DefineField( "y", int::typeid, FieldAttributes::Public );
+   Type^ objType = Type::GetType( "System.Object" );
+   ConstructorInfo^ objCtor = objType->GetConstructor( gcnew array<Type^>(0) );
+   ConstructorBuilder^ pointCtor = pointTypeBld->DefineConstructor( MethodAttributes::Public, CallingConventions::Standard, ctorParams );
+   ILGenerator^ ctorIL = pointCtor->GetILGenerator();
+   
+   // First, you build the constructor.
+   ctorIL->Emit( OpCodes::Ldarg_0 );
+   ctorIL->Emit( OpCodes::Call, objCtor );
+   ctorIL->Emit( OpCodes::Ldarg_0 );
+   ctorIL->Emit( OpCodes::Ldarg_1 );
+   ctorIL->Emit( OpCodes::Stfld, xField );
+   ctorIL->Emit( OpCodes::Ldarg_0 );
+   ctorIL->Emit( OpCodes::Ldarg_2 );
+   ctorIL->Emit( OpCodes::Stfld, yField );
+   ctorIL->Emit( OpCodes::Ret );
+   
+   //  Now, you'll build a method to output some information on the
+   // inside your dynamic class. This method will have the following
+   // definition in C#:
+   //  public void WritePoint()
+   MethodBuilder^ writeStrMthd = pointTypeBld->DefineMethod( "WritePoint", MethodAttributes::Public, void::typeid, nullptr );
+   ILGenerator^ writeStrIL = writeStrMthd->GetILGenerator();
+   
+   // The below ILGenerator created demonstrates a few ways to create
+   // String* output through STDIN.
+   // ILGenerator::EmitWriteLine(String*) will generate a ldstr and a
+   // call to WriteLine for you.
+   writeStrIL->EmitWriteLine( "The value of this current instance is:" );
+   
+   // Here, you will do the hard work yourself. First, you need to create
+   // the String* we will be passing and obtain the correct WriteLine overload
+   // for said String*. In the below case, you are substituting in two values,
+   // so the chosen overload is Console::WriteLine(String*, Object*, Object*).
+   String^ inStr = "( {0}, {1})";
+   array<Type^>^wlParams = {String::typeid,Object::typeid,Object::typeid};
+   
+   // We need the MethodInfo to pass into EmitCall later.
+   MethodInfo^ writeLineMI = Console::typeid->GetMethod( "WriteLine", wlParams );
+   
+   // Push the String* with the substitutions onto the stack.
+   // This is the first argument for WriteLine - the String* one.
+   writeStrIL->Emit( OpCodes::Ldstr, inStr );
+   
+   // Since the second argument is an Object*, and it corresponds to
+   // to the substitution for the value of our integer field, you
+   // need to box that field to an Object*. First, push a reference
+   // to the current instance, and then push the value stored in
+   // field 'x'. We need the reference to the current instance (stored
+   // in local argument index 0) so Ldfld can load from the correct
+   // instance (this one).
+   writeStrIL->Emit( OpCodes::Ldarg_0 );
+   writeStrIL->Emit( OpCodes::Ldfld, xField );
+   
+   // Now, we execute the box opcode, which pops the value of field 'x',
+   // returning a reference to the integer value boxed as an Object*.
+   writeStrIL->Emit( OpCodes::Box, int::typeid );
+   
+   // Atop the stack, you'll find our String* inStr, followed by a reference
+   // to the boxed value of 'x'. Now, you need to likewise box field 'y'.
+   writeStrIL->Emit( OpCodes::Ldarg_0 );
+   writeStrIL->Emit( OpCodes::Ldfld, yField );
+   writeStrIL->Emit( OpCodes::Box, int::typeid );
+   
+   // Now, you have all of the arguments for your call to
+   // Console::WriteLine(String*, Object*, Object*) atop the stack:
+   // the String* InStr, a reference to the boxed value of 'x', and
+   // a reference to the boxed value of 'y'.
+   // Call Console::WriteLine(String*, Object*, Object*) with EmitCall.
+   writeStrIL->EmitCall( OpCodes::Call, writeLineMI, nullptr );
+   
+   // Lastly, EmitWriteLine can also output the value of a field
+   // using the overload EmitWriteLine(FieldInfo).
+   writeStrIL->EmitWriteLine( "The value of 'x' is:" );
+   writeStrIL->EmitWriteLine( xField );
+   writeStrIL->EmitWriteLine( "The value of 'y' is:" );
+   writeStrIL->EmitWriteLine( yField );
+   
+   // Since we return no value (void), the the ret opcode will not
+   // return the top stack value.
+   writeStrIL->Emit( OpCodes::Ret );
+   return pointTypeBld->CreateType();
+}
+
+int main()
+{
+   array<Object^>^ctorParams = gcnew array<Object^>(2);
+   Console::Write( "Enter a integer value for X: " );
+   String^ myX = Console::ReadLine();
+   Console::Write( "Enter a integer value for Y: " );
+   String^ myY = Console::ReadLine();
+   Console::WriteLine( "---" );
+   ctorParams[ 0 ] = Convert::ToInt32( myX );
+   ctorParams[ 1 ] = Convert::ToInt32( myY );
+   Type^ ptType = CreateDynamicType();
+   Object^ ptInstance = Activator::CreateInstance( ptType, ctorParams );
+   ptType->InvokeMember( "WritePoint", BindingFlags::InvokeMethod, nullptr, ptInstance, gcnew array<Object^>(0) );
+}
+
+
+ 
+J#  Copy Code 
+import System.*;
+import System.Threading.*;
+import System.Reflection.*;
+import System.Reflection.Emit.*;
+
+class EmitWriteLineDemo
+{
+    public static Type CreateDynamicType()
+    {
+        Type ctorParams[] = new Type[] { int.class.ToType(), 
+            int.class.ToType() };
+        AppDomain myDomain = System.Threading.Thread.GetDomain();
+        AssemblyName myAsmName = new AssemblyName();
+        myAsmName.set_Name("MyDynamicAssembly");
+        AssemblyBuilder myAsmBuilder = 
+            myDomain.DefineDynamicAssembly(myAsmName,
+            AssemblyBuilderAccess.RunAndSave);
+        ModuleBuilder pointModule = myAsmBuilder.DefineDynamicModule(
+            "PointModule", "Point.dll");
+        TypeBuilder pointTypeBld = pointModule.DefineType("Point",
+            TypeAttributes.Public);
+        FieldBuilder xField = pointTypeBld.DefineField("x", int.class.ToType(),
+            FieldAttributes.Public);
+        FieldBuilder yField = pointTypeBld.DefineField("y", int.class.ToType(),
+            FieldAttributes.Public);
+        Type objType = Type.GetType("System.Object");
+        ConstructorInfo objCtor = objType.GetConstructor(new Type[0]);
+        ConstructorBuilder pointCtor = pointTypeBld.DefineConstructor
+            (MethodAttributes.Public, CallingConventions.Standard, ctorParams);
+        ILGenerator ctorIL = pointCtor.GetILGenerator();
+
+        // First, you build the constructor.
+        ctorIL.Emit(OpCodes.Ldarg_0);
+        ctorIL.Emit(OpCodes.Call, objCtor);
+        ctorIL.Emit(OpCodes.Ldarg_0);
+        ctorIL.Emit(OpCodes.Ldarg_1);
+        ctorIL.Emit(OpCodes.Stfld, xField);
+        ctorIL.Emit(OpCodes.Ldarg_0);
+        ctorIL.Emit(OpCodes.Ldarg_2);
+        ctorIL.Emit(OpCodes.Stfld, yField);
+        ctorIL.Emit(OpCodes.Ret);
+
+        //  Now, you'll build a method to output some information on the
+        // inside your dynamic class. This method will have the following
+        // definition in VJ#:
+        //  public void WritePoint()
+        MethodBuilder writeStrMthd = pointTypeBld.DefineMethod("WritePoint",
+            MethodAttributes.Public, void.class.ToType(), null);
+        ILGenerator writeStrIL = writeStrMthd.GetILGenerator();
+
+        // The below ILGenerator created demonstrates a few ways to create
+        // string output through STDIN. 
+        // ILGenerator.EmitWriteLine(string) will generate a ldstr and a 
+        // call to WriteLine for you.
+        writeStrIL.EmitWriteLine("The value of this current instance is:");
+
+        // Here, you will do the hard work yourself. First, you need to create
+        // the string we will be passing and obtain the correct WriteLine
+        // overload for said string. In the below case, you are substituting
+        // in two values, so the chosen overload is
+        // Console.WriteLine(string, object, object).
+        String inStr = "({0}, {1})";
+        Type wlParams[] = new Type[] { String.class.ToType(),
+            Object.class.ToType(), Object.class.ToType() };
+
+        // We need the MethodInfo to pass into EmitCall later.
+        MethodInfo writeLineMI = Console.class.ToType().GetMethod("WriteLine",
+            wlParams);
+
+        // Push the string with the substitutions onto the stack.
+        // This is the first argument for WriteLine - the string one. 
+        writeStrIL.Emit(OpCodes.Ldstr, inStr);
+
+        // Since the second argument is an object, and it corresponds to
+        // to the substitution for the value of our integer field, you 
+        // need to box that field to an object. First, push a reference
+        // to the current instance, and then push the value stored in
+        // field 'x'. We need the reference to the current instance (stored
+        // in local argument index 0) so Ldfld can load from the correct
+        // instance (this one).
+        writeStrIL.Emit(OpCodes.Ldarg_0);
+        writeStrIL.Emit(OpCodes.Ldfld, xField);
+
+        // Now, we execute the box opcode, which pops the value of field 'x',
+        // returning a reference to the integer value boxed as an object.
+        writeStrIL.Emit(OpCodes.Box, int.class.ToType());
+
+        // Atop the stack, you'll find our string inStr, followed by a 
+        // reference to the boxed value of 'x'. Now, you need to likewise
+        // box field 'y'.
+        writeStrIL.Emit(OpCodes.Ldarg_0);
+        writeStrIL.Emit(OpCodes.Ldfld, yField);
+        writeStrIL.Emit(OpCodes.Box, int.class.ToType());
+
+        // Now, you have all of the arguments for your call to
+        // Console.WriteLine(string, object, object) atop the stack:
+        // the string InStr, a reference to the boxed value of 'x', and
+        // a reference to the boxed value of 'y'.
+        // Call Console.WriteLine(string, object, object) with EmitCall.
+        writeStrIL.EmitCall(OpCodes.Call, writeLineMI, null);
+
+        // Lastly, EmitWriteLine can also output the value of a field
+        // using the overload EmitWriteLine(FieldInfo).
+        writeStrIL.EmitWriteLine("The value of 'x' is:");
+        writeStrIL.EmitWriteLine(xField);
+        writeStrIL.EmitWriteLine("The value of 'y' is:");
+        writeStrIL.EmitWriteLine(yField);
+
+        // Since we return no value (void), the the ret opcode will not
+        // return the top stack value.
+        writeStrIL.Emit(OpCodes.Ret);
+        return pointTypeBld.CreateType();
+    } //CreateDynamicType
+    
+    public static void main(String[] args)
+    {
+        Object ctorParams[] = new Object[2];
+        Console.Write("Enter a integer value for X: ");
+        String myX = Console.ReadLine();
+        Console.Write("Enter a integer value for Y: ");
+        String myY = Console.ReadLine();
+        Console.WriteLine("---");
+        ctorParams[0] = (Int32)Integer.parseInt(myX);
+        ctorParams[1] = (Int32)Integer.parseInt(myY);
+        Type ptType = CreateDynamicType();
+        Object ptInstance = Activator.CreateInstance(ptType, ctorParams);
+        ptType.InvokeMember("WritePoint", BindingFlags.InvokeMethod, null,
+            ptInstance, new Object[0]);
+    } //main
+} //EmitWriteLineDemo
+
+ 
+
+
+
+TODO:
+
+	'in' operator:
+	
+type TT = { 'a', 3, 'flfal' };
+
+if ( int m = 3 in TT ) {
+	...
+}
+
+Implement either in Binary operation or a separate *.h and *.cpp files.
+
+
+
+
+
+Java:
+	break  [label];
+	continue [label];
+Example:
+
+test:
+		for ( int i = 0; i < 10; i++)
+
+        for(int j = 0; j < 10; j++)
+
+          if( i > 3)
+
+            break test;
+
+		
+	
+	
+	Push EBP on to the stack (to save its value).
+	Copy the current ESP value into EBP.
+	Decrement ESP to allocate local storage.
+	Execute the function's instructions.
+The code that performs these four steps is known as the invoked function's prologue. 
+
+
+High memory			state
+					return value
+					arguments
+					return address__________________________________
+					EBP
+Low memory			local variables
+					
+
+
+make a namespace "Hashing"
+make a namespace "AST"
+
+
+
+9.2.  X++ Grammar
+
+CMPL_UNIT ::= RETTYPEID FUNC_HDR FUNC_HEAD BODY  
+CMPL_UNIT ::= RETTYPEID DATA_HDR CLASS_DECL 
+CMPL_UNIT ::= EXPR_HDR IF_EXPR SEMIOPT 
+SEMIOPT ::= ; 
+SEMIOPT ::= 
+CLASS_DECL ::= CLASS_HEADER { DCL_LIST } 
+CLASS_HEADER ::= CLASS_MODIFIERS class identifier EXTENDS 
+CLASS_MODIFIERS ::= CLASS_MODS 
+CLASS_MODIFIERS ::= 
+CLASS_MODS ::= CLASS_MODIFIER 
+CLASS_MODS ::= CLASS_MODS RETTYPEID CLASS_MODIFIER 
+CLASS_MODIFIER ::= public 
+CLASS_MODIFIER ::= final 
+CLASS_MODIFIER ::= static 
+CLASS_MODIFIER ::= abstract 
+EXTENDS ::= extends identifier 
+EXTENDS ::= 
+FUNC_HEAD ::= FUNCNAME PARM_DCL_LIST 
+FUNCNAME ::= FUNCTYPE identifier 
+FUNCTYPE ::= FUNC_MODIFIERS DECL_TYPE 
+FUNC_MODIFIERS ::= FUNC_MODS 
+FUNC_MODIFIERS ::= 
+FUNC_MODS ::= RETTYPEID FUNC_MODIFIER 
+FUNC_MODS ::= FUNC_MODS RETTYPEID FUNC_MODIFIER 
+FUNC_MODIFIER ::= public 
+FUNC_MODIFIER ::= private 
+FUNC_MODIFIER ::= protected 
+FUNC_MODIFIER ::= final 
+FUNC_MODIFIER ::= static 
+FUNC_MODIFIER ::= abstract 
+FUNC_MODIFIER ::= display 
+FUNC_MODIFIER ::= edit 
+FUNC_MODIFIER ::= server 
+FUNC_MODIFIER ::= client 
+BODY ::= { DCL_FUNC_LIST SEMIOPT STMTLIST } 
+RETTYPEID ::= 
+FUNCTION_DEF ::= FUNC_HEADER PARM_DCL_LIST LOCAL_BODY 
+FUNC_HEADER ::= DECL_TYPE identifier 
+PARM_DCL_LIST ::= RETTYPEID PARM_START PARM_LIST_OPT 
+PARM_START ::= ( 
+PARM_LIST_OPT ::= PARM_LIST 
+PARM_LIST_OPT ::= 
+PARM_LIST ::= DCL_INIT 
+PARM_LIST ::= PARM_LIST , DCL_INIT 
+LOCAL_BODY ::= { DCL_LIST STMTLIST RETTYPEID } 
+DCL_LIST ::= DCL_LIST2 
+DCL_LIST ::= 
+DCL_LIST2 ::= DCL_STMT 
+DCL_LIST2 ::= DCL_LIST2 DCL_STMT 
+DCL_FUNC_LIST ::= DCL_FUNC_LIST2 
+DCL_FUNC_LIST ::= 
+DCL_FUNC_LIST2 ::= DCL_STMT 
+DCL_FUNC_LIST2 ::= FUNCTION_DEF 
+DCL_FUNC_LIST2 ::= DCL_FUNC_LIST2 DCL_STMT 
+DCL_FUNC_LIST2 ::= DCL_FUNC_LIST2 FUNCTION_DEF 
+DCL_STMT ::= DCL_INIT_LIST; 
+DCL_INIT_LIST ::= DCL_INIT 
+DCL_INIT_LIST ::= DCL_CLIST ASG_CLAUSE 
+DCL_CLIST ::= DCL_INIT_LIST , identifier ARR_DCL_IDX 
+DCL_INIT ::= DECL ASG_CLAUSE 
+DECL ::= DECL_TYPE identifier ARR_DCL_IDX 
+DECL_TYPE ::= str STR_LEN JUSTIFICATION 
+DECL_TYPE ::= int 
+DECL_TYPE ::= real 
+DECL_TYPE ::= date 
+DECL_TYPE ::= TYPE_ID 
+DECL_TYPE ::= container 
+DECL_TYPE ::= void 
+DECL_TYPE ::= any 
+STR_LEN ::= integer_literal 
+STR_LEN ::= 
+JUSTIFICATION ::= right 
+JUSTIFICATION ::= left 
+JUSTIFICATION ::= 
+ARR_DCL_IDX ::= [ RANGE ARRAY_MEM ] 
+ARR_DCL_IDX ::= 
+RANGE ::= IF_EXPR 
+RANGE ::= 
+ARRAY_MEM ::= , IF_EXPR 
+ARRAY_MEM ::= 
+ASG_CLAUSE ::= INIT_START IF_EXP
+ASG_CLAUSE ::= 
+INIT_START ::= = 
+ASG_STMT ::= LVAL_FLD ASSIGN IF_
+ASG_STMT ::= LVAL_LIST = IF_EXPR 
+ASG_STMT ::= LVAL_FLD ASG_INC_D
+ASG_STMT ::= ASG_INC_DEC LVAL_F
+ASSIGN ::= = 
+ASSIGN ::= += 
+ASSIGN ::= -= 
+ASG_INC_DEC ::= ++ 
+ASG_INC_DEC ::= -- 
+LVAL_FLD ::= FIELD 
+LVAL_START ::= [ 
+LVAL_LIST ::= LVAL_START LVALUE
+LVALUE ::= FIELD 
+LVALUES ::= LVALUE 
+LVALUES ::= LVALUES NEXTLVAL LV
+NEXTLVAL ::= , 
+IF_EXPR ::= COND_TRUE IF_EXPR 
+IF_EXPR ::= BOOL_EXPR 
+COND_TRUE ::= COND_TEST IF_EXPR
+COND_TEST ::= BOOL_EXPR ? 
+BOOL_EXPR ::= BOOL_EXPR LOGOP 
+BOOL_EXPR ::= EXPR 
+LOGOP ::= && 
+LOGOP ::= || 
+EXPR ::= SMPL_EXPR RELOP SMPL_EXPR 
+EXPR ::= SMPL_EXPR 
+RELOP ::=  
+RELOP ::=  
+RELOP ::= == 
+RELOP ::= != 
+RELOP ::= 
+RELOP ::= = 
+RELOP ::= like 
+SMPL_EXPR ::= SMPL_EXPR ADDOP TERM 
+SMPL_EXPR ::= TERM 
+ADDOP ::= + 
+ADDOP ::= - 
+ADDOP ::= | 
+TERM ::= TERM MULOP CMPL_FACT 
+TERM ::= CMPL_FACT 
+MULOP ::= * 
+MULOP ::= / 
+MULOP ::= mod 
+MULOP ::= div 
+MULOP ::=  
+MULOP ::= 
+MULOP ::= & 
+MULOP ::= ~ 
+CMPL_FACT ::= not SGND_FACT 
+CMPL_FACT ::= SGND_FACT 
+SGND_FACT ::= SIGNOP FACTOR 
+SGND_FACT ::= FACTOR 
+SIGNOP ::= - 
+SIGNOP ::= ! 
+FACTOR ::= ( IF_EXPR ) 
+FACTOR ::= CONSTANT 
+FACTOR ::= FIELD 
+FACTOR ::= DIRSEARCH 
+FACTOR ::= FUNCTION 
+FACTOR ::= INTRINSICS 
+FACTOR ::= EVAL 
+FACTOR ::= CONLITTERAL 
+CONLITTERAL ::= [ IF_EXPR EXPR_LIST ] 
+CONSTANT ::= integer_literal 
+CONSTANT ::= real_literal 
+CONSTANT ::= string_literal 
+CONSTANT ::= date_literal 
+CONSTANT ::= identifier :: identifier 
+CONSTANT ::= true 
+CONSTANT ::= false 
+CONSTANT ::= null 
+DIRSEARCH ::= DIRS_HEADER . identifier ARR_IDX 
+DIRSEARCH ::= DIRS_HEADER . FLD_NUM ARR_IDX 
+DIRS_HEADER ::= ( SET_DIRS FIND_JOIN ) 
+SET_DIRS ::= 
+FIELD ::= QUALIFIER identifier ARR_IDX 
+FIELD ::= QUALIFIER FLD_NUM ARR_IDX 
+FIELD ::= identifier ARR_IDX 
+QUALIFIER ::= EVAL . 
+QUALIFIER ::= identifier . 
+FLD_NUM ::= ( IF_EXPR ) 
+ARR_IDX ::= [ SMPL_EXPR ] 
+ARR_IDX ::= 
+EXPR_LIST ::= EXPR_LIST2 
+EXPR_LIST ::= 
+EXPR_LIST2 ::= , IF_EXPR 
+EXPR_LIST2 ::= EXPR_LIST2 , IF_EXPR 
+FUNCTION ::= identifier ( PAR_LIST ) 
+EVAL_NAME ::= EVAL_ID ( 
+EVAL_NAME ::= identifier ( 
+EVAL_NAME ::= identifier :: identifier ( 
+EVAL_NAME ::= super ( 
+EVAL_NAME ::= new identifier ( 
+EVAL_NAME ::= QUALIFIER identifier ( 
+EVAL_NAME ::= QUALIFIER identifier :: identifier 
+EVAL ::= EVAL_NAME PAR_LIST ) 
+PAR_LIST ::= PRM_LIST 
+PAR_LIST ::= 
+PRM_LIST ::= IF_EXPR 
+PRM_LIST ::= PRM_LIST , IF_EXPR 
+INTRINSICS ::= intrinsic_function ( IARGS ) 
+IARGS ::= identifier 
+IARGS ::= string_literal 
+IARGS ::= identifier , identifier 
+IARGS ::= 
+STMTLIST ::= STATEMENTS 
+STMTLIST ::=STATEMENTS ::= STATEMENT 
+STATEMENTS ::= STATEMENTS STATEMENT 
+STATEMENT ::= COMPOUND_STMT 
+STATEMENT ::= ; 
+STATEMENT ::= WHILE_STMT 
+STATEMENT ::= FOR_STMT 
+STATEMENT ::= DO_STMT 
+STATEMENT ::= SEARCH_STMT 
+STATEMENT ::= FIND_STMT 
+STATEMENT ::= PRINT_STMT 
+STATEMENT ::= WINDOW_STMT 
+STATEMENT ::= IF_STMT 
+STATEMENT ::= SWITCH_STMT 
+STATEMENT ::= EXPR_STMT 
+STATEMENT ::= PAUSE_STMT 
+STATEMENT ::= BP_CLAUSE 
+STATEMENT ::= BREAK_STMT 
+STATEMENT ::= CONTINUE_STMT 
+STATEMENT ::= RETURN_CLAUSE 
+STATEMENT ::= MOVE_REC_STMT 
+STATEMENT ::= THROW_STMT 
+STATEMENT ::= TRY_STMT 
+STATEMENT ::= RETRY_STMT 
+STATEMENT ::= TTS_STMT 
+STATEMENT ::= FLUSH_STMT 
+STATEMENT ::= TBLLOCK_STMT 
+STATEMENT ::= CHANGE_STMT 
+COMPOUND_STMT ::= { STMTLIST } 
+THROW_STMT ::= throw IF_EXPR ; 
+TRY_STMT ::= TRY_BLOCK CATCH_LIST 
+TRY_BLOCK ::= TRY_START STATEMENT 
+TRY_START ::= try 
+CATCH_LIST ::= CATCH_STMT 
+CATCH_LIST ::= CATCH_LIST CATCH_STMT 
+CATCH_STMT ::= CATCH_EXPR STATEMENT 
+CATCH_EXPR ::= catch ( IF_EXPR ) 
+RETRY_STMT ::= retry ; 
+WHILE_STMT ::= WHILE_TEST STATEMENT 
+WHILE_TEST ::= WHILE ( IF_EXPR ) 
+WHILE ::= while 
+DO_STMT ::= DO_BODY DO_TEST ; 
+DO_BODY ::= DO_HEADER STATEMENT 
+DO_HEADER ::= do 
+DO_TEST ::= while ( IF_EXPR ) 
+FOR_STMT ::= FOR_HEADER STATEMENT 
+FOR_HEADER ::= FOR_TEST ; FOR_ASG ) 
+FOR_TEST ::= FOR_INIT ; IF_EXPR 
+FOR_INIT ::= for ( FOR_ASG 
+FOR_ASG ::= LVAL_FLD ASSIGN IF_EXPR 
+FOR_ASG ::= LVAL_FLD ASG_INC_DEC 
+FOR_ASG ::= ASG_INC_DEC LVAL_FLD 
+JOIN_LIST ::= JOIN_SPECS 
+JOIN_LIST ::= 
+JOIN_SPECS ::= JOIN_SPEC 
+JOIN_SPECS ::= JOIN_SPECS JOIN_SPEC 
+JOIN_SPEC ::= JOIN_ORDER WHERE IF_EXPR 
+JOIN_SPEC ::= JOIN_ORDER 
+JOIN_ORDER ::= JOIN_USING 
+JOIN_ORDER ::= JOIN_OLIST 
+JOIN_OLIST ::= JOIN_USING ORDER_GROUP ORDER_ELEM 
+JOIN_OLIST ::= JOIN_OLIST , ORDER_ELEM 
+JOIN_USING ::= JOIN_CLAUSE USING_INDEX identifier 
+JOIN_USING ::= JOIN_CLAUSE USING_INDEX hint identifier 
+JOIN_USING ::= JOIN_CLAUSE 
+JOIN_CLAUSE ::= OUTER join SELECTOPT TABLE 
+OUTER ::= outer 
+OUTER ::= exists 
+OUTER ::= notexists 
+OUTER ::= 
+SEARCH_STMT ::= SEARCH_JOIN STATEMENT 
+SEARCH_JOIN ::= SEARCH_WHERE JOIN_LIST 
+SEARCH_WHERE ::= SEARCH_ORDER WHERE IF_EXPR 
+SEARCH_WHERE ::= SEARCH_ORDER 
+WHERE ::= where 
+SUM_ELEM ::= SUM_FUNC ( identifier ) 
+SUM_FUNC ::= sum 
+SUM_FUNC ::= avg 
+SUM_FUNC ::= count 
+SUM_FUNC ::= minof 
+SUM_FUNC ::= maxof 
+SEARCH_ORDER ::= SEARCH_USING 
+SEARCH_ORDER ::= SEARCH_OLIST 
+SEARCH_OLIST ::= SEARCH_USING ORDER_GROUP ORDER_ELEM 
+SEARCH_OLIST ::= SEARCH_OLIST , ORDER_ELEM 
+ORDER_GROUP ::= order OPT_BY 
+ORDER_GROUP ::= group OPT_BY 
+ORDER_ELEM ::= identifier INDEX DIRECTION 
+INDEX ::= [ integer_literal ] 
+INDEX ::= 
+DIRECTION ::= asc 
+DIRECTION ::= desc 
+DIRECTION ::= 
+OPT_BY ::= by 
+OPT_BY ::= 
+SEARCH_USING ::= SEARCH_CLAUSE USING_INDEX identifier 
+SEARCH_USING ::= SEARCH_CLAUSE USING_INDEX hint identifier 
+SEARCH_USING ::= SEARCH_CLAUSE 
+USING_INDEX ::= index 
+SEARCH_CLAUSE ::= while select SELECTOPT TABLE 
+SELECTOPT ::= 
+SELECTOPT ::= SELECTOPT reverse 
+SELECTOPT ::= SELECTOPT firstFast 
+SELECTOPT ::= SELECTOPT firstonly 
+SELECTOPT ::= SELECTOPT forupdate 
+SELECTOPT ::= SELECTOPT nbofetch 
+SELECTOPT ::= SELECTOPT forceSelectOrder 
+SELECTOPT ::= SELECTOPT forceNestedLoop 
+SELECTOPT ::= SELECTOPT forceLiterals 
+FIND_STMT ::= FIND_JOIN ; 
+FIND_JOIN ::= FIND_WHERE JOIN_LIST 
+FIND_WHERE ::= FIND_ORDER WHERE IF_EXPR 
+FIND_WHERE ::= FIND_ORDER 
+FIND_ORDER ::= FIND_USING 
+FIND_ORDER ::= FIND_OLIST 
+FIND_OLIST ::= FIND_USING ORDER_GROUP ORDER_ELEM 
+FIND_OLIST ::= FIND_OLIST , ORDER_ELEM 
+FIND_USING ::= FIND_TABLE USING_INDEX identifier 
+FIND_USING ::= FIND_TABLE USING_INDEX hint identifier 
+FIND_USING ::= FIND_TABLE 
+FIND_TABLE ::= select SELECTOPT TABLE 
+FIND_TABLE ::= delete SELECTOPT TABLE 
+TABLE ::= FLD_LIST OPT_FROM 
+FLD_LIST ::= * 
+FLD_LIST ::= FIELD_LIST 
+FIELD_LIST ::= FIELD_SPEC 
+FIELD_LIST ::= FIELD_LIST , FIELD_SPEC 
+FIELD_SPEC ::= identifier 
+FIELD_SPEC ::= SUM_ELEM 
+OPT_FROM ::= from identifier 
+OPT_FROM ::= 
+PRINT_STMT ::= PRINT_CLAUSE AT_CLAUSE ; 
+PRINT_CLAUSE ::= PRINT IF_EXPR EXPR_LIST 
+PRINT ::= print 
+AT_CLAUSE ::= at IF_EXPR , IF_EXPR 
+AT_CLAUSE ::= 
+WINDOW_STMT ::= window IF_EXPR , 
+IF_STMT ::= ELSE_STMT 
+IF_STMT ::= IF_CONDS 
+IF_CONDS ::= IF_COND STATEMENT 
+IF_COND ::= if ( IF_EXPR ) 
+ELSE_STMT ::= ELSE STATEMENT 
+ELSE ::= IF_CONDS else 
+SWITCH_STMT ::= CASE_LIST } 
+CASE_LIST ::= switch ( IF_EXPR ) 
+CASE_LIST ::= CASE_TESTS STMTLIST 
+CASE_TESTS ::= CASE_HEADER : 
+CASE_TESTS ::= CASE_LIST default : 
+CASE_HEADER ::= CASE IF_EXPR 
+CASE_HEADER ::= CASEALT IF_EXPR 
+CASE ::= CASE_LIST case 
+CASEALT ::= CASE_HEADER , 
+EXPR_STMT ::= ASG_STMT ; 
+EXPR_STMT ::= FUNCTION ; 
+EXPR_STMT ::= INTRINSICS ; 
+EXPR_STMT ::= EVAL ; 
+PAUSE_STMT ::= pause ; 
+BP_CLAUSE ::= break_point ; 
+BREAK_STMT ::= break ; 
+CONTINUE_STMT ::= continue ; 
+RETURN_CLAUSE ::= return ; 
+RETURN_CLAUSE ::= return IF_EXPR ; 
+TTS_STMT ::= ttsabort ; 
+TTS_STMT ::= ttsbegin ; 
+TTS_STMT ::= ttsend ; 
+FLUSH_STMT ::= FLUSH ID
+FLUSH ::= flush 
+TBLLOCK_STMT ::= TABL
+TABLELOCK ::= tablelock 
+ID_LIST ::= identifier 
+ID_LIST ::= ID_LIST , identi
+MOVE_REC_STMT ::= next 
+CHANGE_STMT ::= CHANG
+CHANGE_HEADER ::= CHA
+CHANGE ::= changeCompan
+CHANGE ::= changeSite 
+ 
+
+
+
+
+for ( int a, real m = 23, a = 22 < y;
+	  a <= b;
+	  t+= 32, c -= 23 )
+{
+}
+
+
+A typical activation record:
+
+	return value
+	actual parameters
+	control link
+	access	link
+	saved state	( eip, pushed registers, etc.)
+	local variables
+	temporary variables
+	
+// globals: data segment	
+// locals:	stack segment
+// dynamic vars: heap
+
+
+#define PRIME	211
+#define EOS		'\0'
+
+int		hashpjw(s)
+char * s;
+{
+	char * p;
+	unsigned h = 0, g;
+	for ( p = s; *p != EOS; p++ )
+		if ( g = (h = (h << 4) + *p) & 0xF0000000 )
+			h ^= g >> 24 ^ g;
+	return h % PRIME;
+}
+
+
+
+Idea: all loops should derive from Loop which has a body and a test expression( condition ).
+
+/*
+	The following declarations 
+	
+	Type	var1, var2 = Expr, var3( ... ), var4[ ... ];
+	(int)
+	(real)
+	(...)
+
+	will be transformed into
+
+	Type	var1;
+	Type	var2;
+	var2 = Expression;
+	var3( ... );		// method call
+	Type	var4[ ... ];
+
+*/
+
+OPERATION CODES
+
+These are shown in the list file when the T option is selected.
+Operations take zero, one, or two operands: x represents an 8-bit operand,
+usually a level number; y represents a 16-bit quantity, such as an address
+or an integer.
+
+Code          Action
+  0  x  y  Load address
+  1  x  y  Load value
+  2  x  y  Load indirect
+  3  x  y  Update DISPLAY
+  4          not used
+  5          not used
+  6          not used
+  7     y  Concatenate
+  8     y  Standard functions
+  9     y  Add y to the element on top of the stack
+ 10     y  Jump to y (unconditional)
+ 11     y  Jump to y if stack top false
+ 12     y  Jump to y (case table) and select entry
+ 13     y  Entry in case table ... NOT EXECUTABLE
+ 14     y  For loop entry test - UP
+ 15     y  For loop retry test - UP
+ 16     y  For loop entry test - DOWN
+ 17     y  For loop retry test - DOWN
+ 18     y  Mark stack
+ 19     y  Call user procedure
+ 20     y  Indexed fetch (element size > 1)
+ 21     y  Indexed fetch
+ 22     y  Load block
+ 23     y  Copy block
+ 24     y  Load literal
+ 25     y  Load real
+ 26     y  Float
+ 27     y  Read (y denotes type .. 1 integer, 2 real, 4 char)
+ 28     y  Write string
+ 29     y  Write - default field widths
+ 30     y  Write - defined field widths
+ 31     y  Assign string (of length 1) to char
+ 32     y  Relation operators for strings
+
+ 33-130      not used
+
+131        Halt
+132        Exit procedure
+133        Exit function
+134        Fetch
+135        Not
+136        - integer (unary)
+137        Write real - defined field
+138        Store
+139        Real =
+140        Real <>
+141        Real <
+142        Real <=
+143        Real >
+144        Real >=
+145        Integer =
+146        Integer <>
+147        Integer <
+148        Integer <=
+149        Integer >
+150        Integer >=
+151        Or
+152        + integer
+153        - integer
+154        + real
+155        - real
+156        And
+157        * integer
+158        Div
+159        Mod
+160        * real
+161        /
+162        Readln
+163        Writeln
+164        - real (unary)
+165        Index string
+166        Assign string temporary to string
+167        Convert array to string
+168        Assign character to string
+169        Assign string to string
+170        Write string
+171        Write string temporary
+172        Value parameter - string
+173        Value parameter - string temporary
+174        Convert string to array
+175        Convert string temporary to array
+176        Write string - defined field
+177        Write string temporary - defined field
+
+178-255     not used
+
+
+array
+176        Write string - defi
+
+
+
+
+
+
+
+
+
+
+// from AST.h
+
+#if 0
+// TODO: TypeNode for user-defined data types. TypeNode will be the base class which will be inherited by SimpleType and ComplexType( or UserType ).
+
+// int, char, bool, float, double, string.
+// simple or built-in types don't have links to any type symbol entries.
+class SimpleType : public Type_ast {
+public:
+			SimpleType( int type );
+			~SimpleType();
+
+	int		Type() const;
+	void	Print() const;
+
+private:
+	int	  type;	// T_INT, T_CHAR, etc. .
+};
+
+INLINE SimpleType::SimpleType( int type ) : type( type ) {
+}
+
+INLINE SimpleType::~SimpleType() {
+}
+
+INLINE int SimpleType::Type() const {
+	return type;
+}
+
+// base for complex types( structs, classes and interfaces ).
+class ComplexType : public Type_ast {
+	// ...
+private:
+	TypeEntry *		symbol;	// is null, if this node hasn't been resolved
+};
+#pragma Idea: LocalVar( allocated on stack ), GlobalVar and, maybe, heap object.
+// For variables used in some context.
+class VarEntry : public NameEntry {
+public:
+private:
+	TypeEntry *		type;	// points to simple type entry or to user type entry.
+};
+#endif
+
+// Some statements may return (m)any values. 
+class Statement : public Expression {
+};
+
+
+
+
+
+
+
+
+// ?: operator :  Expression ? true_Exp : false_Exp .
+// Ex.: int x = f ? 1 : 3;
+//   some_var = t ? { a, b, c } : { a, b-1, 0 };
+// TODO: statements instead of expressions
+class Conditional : public Expression {
+public:
+			Conditional( Expression *test_exp, Expression *true_exp, Expression *false_exp );
+			~Conditional();
+
+	void	Resolve();
+	Expression *	SimplifyNode();
+	void	Generate();
+	void	Print() const;
+	bool	IsLiteralConstant() const;
+
+private:
+	Expression  * test_exp,  * true_exp,  * false_exp;
+};
+
+INLINE Conditional::Conditional( Expression *test_exp, Expression *true_exp, Expression *false_exp ) 
+: test_exp( test_exp ),  true_exp( true_exp ),  false_exp( false_exp )
+{
+}
+
+INLINE Conditional::~Conditional() {
+	SAFE_DELETE( test_exp );
+	SAFE_DELETE( true_exp );
+	SAFE_DELETE( false_exp );
+}
+
+INLINE bool	Conditional::IsLiteralConstant() const {
+	return  test_exp->IsLiteralConstant();
+}
+
+
+/*
+// The base class for all AST nodes, representing types ( both primitives and complex types ).
+class TypeNode : public AST_Node {
+public:
+			TypeNode( int simple_type );	// for built-in types ( TT_CHARACTER, TT_REAL, etc. ) .
+			~TypeNode();
+
+	void	Resolve();
+	void	Generate();
+	void	Print() const;
+
+private:
+	TypeEntry *		symbol;
+};
+*/
+
+// Example: int var1, var2; UserType var3;  etc. . It inherits from Expression because var. decls can return values.
+class VarDecl : public Statement {
+public:
+			VarDecl( Identifier *id, int simple_type );	 // for primitives; TT_CHARACTER, TT_REAL, etc..
+			//VarDecl( Identifier *id, Type_ast *type );   // for complex, user-defined types.
+			~VarDecl();
+
+	// Semantic checking:
+	// - Create a symbol entry for this local
+	// - Resolve the type node
+	void	Resolve();
+	Expression *	SimplifyNode();
+	void	Generate();
+	void	Print() const;
+	bool	IsLiteralConstant() const;
+
+protected:
+	Identifier *	id;
+	int			  type;	 // TT_CHARACTER, TT_REAL, etc..
+	//	TypeEntry *	  symbol;  <-- if this is here instead of the prev. line then primitive types will have to be added to symbol entries.
+	CModifiers	  modifiers;
+};
+
+INLINE VarDecl::VarDecl( Identifier *id, int simple_type )
+: id( id ), type( simple_type ),   
+  modifiers( M_NOT_SET )
+{
+}
+
+INLINE VarDecl::~VarDecl() {
+	SAFE_DELETE( id );
+}
+
+INLINE bool	VarDecl::IsLiteralConstant() const {
+	return modifiers.IsConst(); /* && type == simple type */;
+}
+
+
+// Automatic, allocated on stack, lexically scoped, variables.
+class LocalVarDecl : public VarDecl {
+public:
+			LocalVarDecl( Identifier *id, int simple_type );	 // for primitives; TT_CHARACTER, TT_REAL, etc..
+		//	LocalVarDecl( Identifier *id, TypeNode *type );	 // for complex, user-defined data types.
+			~LocalVarDecl();
+
+	void	Resolve();
+	void	Generate();
+	void	Print() const;
+	bool	IsLiteralConstant() const;
+
+private:
+	Identifier *	id;
+//	TypeNode *		symbol;
+};
+
+INLINE bool	LocalVarDecl::IsLiteralConstant() const {
+	return modifiers.IsConst(); /* && type == simple type */;
+}
+
+// Automatic, allocated on stack, lexically scoped, variables.
+class GlobalVarDecl : public VarDecl {
+public:
+			GlobalVarDecl( Identifier *id, int simple_type );	 
+		//	GlobalVarDecl( Identifier *id, TypeNode *type );	 // for complex, user-defined data types.
+			~GlobalVarDecl();
+
+	void	Resolve();
+	void	Generate();
+	void	Print() const;
+	bool	IsLiteralConstant() const;
+
+private:
+	Identifier *	id;
+//	TypeNode *		symbol;
+};
+
+INLINE bool	GlobalVarDecl::IsLiteralConstant() const {
+	return modifiers.IsConst(); /* && type == simple type */;
+}
+
+
+
+
+
+
+
+
+// ast.cpp
+
+
+
+
+void BinaryExp::Resolve() {
+	left->Resolve();
+	right->Resolve();
+	// Check if the assignment, type conversion, etc., is possible.
+}
+
+// It's assumed that we've done semantic checking and all expressions are legal.
+Expression* BinaryExp::SimplifyNode()
+{
+	Expression * e_left = left->SimplifyNode();
+	if ( e_left ) 
+	{
+		SAFE_DELETE( left );
+		left = e_left;
+	}
+
+	Expression * e_right = right->SimplifyNode();
+	if ( e_right )
+	{
+		SAFE_DELETE( right );
+		right = e_right;
+	}
+
+	if ( !left->IsLiteralConstant()  || !right->IsLiteralConstant() ) {
+		return 0;
+	}
+
+	
+	GenericLiteral * L = dynamic_cast< GenericLiteral* >( left );
+	GenericLiteral * R = dynamic_cast< GenericLiteral* >( right );
+
+	if ( !L || !R ) {
+		return 0;
+	}
+
+// TODO: 4 * 2.5 = 0;  <-- we must not convert 4 to real, we must convert the result to the largest type!
+
+	/*
+		Now we know that our children are constants 
+		and we may calculate the result of the binary operation,
+		delete ourselves and return this result.
+	*/
+
+	GenericLiteral * result;
+
+	switch ( op ) {
+/*
+		case b_Assign: {
+// TODO:	
+				throw exception( "invalid assignment" );
+				return 0;
+			}
+*/	
+		// Numeric expressions
+
+		case Add:
+			{
+#if 0
+				// primitive type conversion: the result must be converted to the largest operand's type.
+				int	 type = std::max< int >( R->type, L->type );
+
+				GenericLiteral * result;  
+
+				if ( L->type < R->type ) {
+					tmp = new GenericLiteral( *L );
+				} else {
+					tmp = new GenericLiteral( *R );
+				}
+
+				tmp->ConvertTo( type );
+				L->ConvertTo( type );
+				R->ConvertTo( type );
+
+				switch ( type ) 
+				{
+				case TT_INTEGER:
+					{
+						GenericLiteral *result = new GenericLiteral( L->_int  +  R->_int ); 
+						delete left;
+						delete right;
+						//delete this; // if we delete ourselves, we delete our children too. Need somebody to take care of them.
+						return result;	 // memory leak						
+					}
+
+				case TT_REAL:
+					{
+						GenericLiteral *result = new GenericLiteral( 0 ); 
+						result->type = TT_REAL;
+						result->real = L->real + R->real;
+						return result;
+					}
+
+				default:
+					FatalError( "BinaryExp: invalid operation" );
+				}// switch ( type ) 
+#else
+			//	(*result) = *L + *R;
+				result = new GenericLiteral( L->_int + R->_int ); //*L + *R );
+				delete this;
+				return result;
+#endif
+			}// Add
+			
+			case Sub:
+			//	(*result) = *L - *R;
+				delete this;
+				return result;
+
+			case Mul:
+			//	(*result) = *L * *R;
+				delete this;
+				return result;
+
+			case Div:
+			//	(*result) = *L / *R;
+				delete this;
+				return result;
+
+			//case Mod:
+			//	{
+			//		int divisor = right->Evaluate();
+			//		if ( 0 != divisor ) {
+			//			return left->Evaluate() / divisor;
+			//		}
+			//		FatalError( "Division by zero!" );
+			//		return 0;
+			//	}
+
+			//case Expression:
+			//	{
+			//		int right = this->right->Evaluate();
+			//		if ( 0 == right ) {
+			//			return 1;
+			//		}
+
+			//		int left = this->left->Evaluate();
+			//		if ( 0 == left ) {
+			//			return 0;
+			//		} 
+			//		return pow( (float)left, (float)right );
+			//	}
+
+
+				// Logical expressions
+
+#if 0
+			case And:
+				return left->Evaluate() && right->Evaluate();
+
+			case Or:
+				return left->Evaluate() || right->Evaluate();
+
+			case Equ:
+				return  left->Evaluate() == right->Evaluate();
+
+			case Neq:
+				return  left->Evaluate() != right->Evaluate();
+
+			case LE:
+				return  left->Evaluate() <= right->Evaluate();
+
+			case LT:
+				return  left->Evaluate() < right->Evaluate();
+
+			case GE:
+				return  left->Evaluate() >= right->Evaluate();
+
+			case GT:
+				return  left->Evaluate() > right->Evaluate();
+
+
+			// Shifts
+
+			case RShift:
+				return  left->Evaluate() >> right->Evaluate();
+
+			case LShift:
+				return  left->Evaluate() << right->Evaluate();
+#endif
+
+				} // switch ( op )
+// TODO:
+
+	return 0;
+}
+
+void BinaryExp::Generate() {
+}
+
+void BinaryExp::Print() const {
+	printf( "\tBinaryExp: left & right:\n" );
+	left->Print();
+	right->Print();
+}
+
+#pragma endregion
+
+void VarDecl::Resolve() 
+{
+	IScope * the_scope = semantics->GetContext();
+
+	NameEntry * symbol = new NameEntry( id->Name(), the_scope );
+	the_scope->AddSymbol( symbol );  // this may cause an exception, if the var's already been defined
+}
+
+void VarDecl::Generate() {
+// for a local vars the system stack is used
+	id->Generate();
+
+	// if I am of a simple type
+
+	switch ( type ) {
+		case TT_CHARACTER:
+//			codegen->Emit( OP_PUSH_CHAR );
+			break;
+
+		case TT_INTEGER:
+//			codegen->Emit( OP_PUSH_INTEGER );
+			break;
+
+		case TT_BOOLEAN:
+		case TT_REAL:
+		case TT_STRING:
+	
+		default:
+			throw std::exception( "Sorry, the types BOOL, REAL, STRING are not implemented!" );
+	}
+}
+
+Expression* VarDecl::SimplifyNode(){
+	return 0;
+}
+
+void VarDecl::Print() const {
+	printf( "VarDecl: type: %d.\n", type );
+	id->Print();
+}
+
+#if 0
+int BinaryExp::Evaluate( const Evaluator *p ) {
+	switch ( op ) {
+
+		//case UnaryExp::PreInc:
+		//	UnaryExp * L = dynamic_cast< UnaryExp* >( left );
+		//	assert( L );
+		//	if ( !g_vars.Contains( L->Name() ) ) {
+		//		printf( "\nError: undefined identifier: %s.", L->Name() );
+		//		return right->Evaluate();
+		//	}
+		//	int tt = g_vars[ L->Name() ]; 
+		//	return  g_vars[ L->Name() ] = ++tt;
+
+
+		case b_Assign: {
+// TODO:	
+			//assert( left is assignable );
+			Identifier * L = dynamic_cast< Identifier* >( left );
+			assert( L );
+			if ( !g_vars.Contains( L->Name() ) ) {
+				printf( "\nError: undefined identifier: %s.", L->Name() );
+				return right->Evaluate();
+			}
+			return  g_vars[ L->Name() ] = right->Evaluate();
+		}
+
+		// Numeric expressions
+
+			case Add:
+				return left->Evaluate() + right->Evaluate();
+
+			case Sub:
+				return left->Evaluate() - right->Evaluate();
+
+			case Mul:
+				return left->Evaluate() * right->Evaluate();
+
+			case Div:
+				{
+					int divisor = right->Evaluate();
+					if ( 0 != divisor ) {
+						return left->Evaluate() / divisor;
+					}
+					FatalError( "Division by zero!" );
+					return 0;
+				}
+
+			case Mod:
+				{
+					int divisor = right->Evaluate();
+					if ( 0 != divisor ) {
+						return left->Evaluate() / divisor;
+					}
+					FatalError( "Division by zero!" );
+					return 0;
+				}
+
+			case Expression:
+				{
+					int right = this->right->Evaluate();
+					if ( 0 == right ) {
+						return 1;
+					}
+
+					int left = this->left->Evaluate();
+					if ( 0 == left ) {
+						return 0;
+					} 
+					return pow( (float)left, (float)right );
+				}
+
+				// Logical expressions
+
+			case And:
+				return left->Evaluate() && right->Evaluate();
+
+			case Or:
+				return left->Evaluate() || right->Evaluate();
+
+			case Equ:
+				return  left->Evaluate() == right->Evaluate();
+
+			case Neq:
+				return  left->Evaluate() != right->Evaluate();
+
+			case LE:
+				return  left->Evaluate() <= right->Evaluate();
+
+			case LT:
+				return  left->Evaluate() < right->Evaluate();
+
+			case GE:
+				return  left->Evaluate() >= right->Evaluate();
+
+			case GT:
+				return  left->Evaluate() > right->Evaluate();
+
+
+			// Shifts
+
+			case RShift:
+				return  left->Evaluate() >> right->Evaluate();
+
+			case LShift:
+				return  left->Evaluate() << right->Evaluate();
+// TODO:
+
+	}
+	return 0;
+}
+
+void BinaryExp::Print() const {
+	printf( "Binary Expression, op = %d.\n", op );
+	printf( "Left child:" ); left->Print();
+	printf( "Right child:" ); right->Print();
+}
+
+
+int	Conditional::Evaluate( const Evaluator *p ) {
+#if 0
+	if ( test_exp->Evaluate() ) {
+		return true_exp->Evaluate();
+	} else {
+		return false_exp->Evaluate();
+	}
+#else
+	return  ( test_exp->Evaluate()) ? ( true_exp->Evaluate()) : ( false_exp->Evaluate());
+#endif
+}
+
+void Conditional::Print() const {
+	printf( "\n\tTernaryExp:\n" );
+
+	printf( "\n\ttest_exp:\n" );
+	test_exp->Print();
+
+	printf( "\n\ttrue_exp:\n" );
+	true_exp->Print();
+
+	printf( "\n\tfalse_exp:\n" );
+	false_exp->Print();
+}
+
+
+void TypeNode::Print() const {
+	printf( "TypeNode, type = %d.\n", type );
+}
+
+
+void VarDecl::Print() const {
+	cout << "VarDecl, name: " << name.data() << ", type: " << p_type->Type() << endl;
+	p_type->Print();
+}
+
+int	VarDecl::Evaluate( const Evaluator *p ) {
+//	static char		count = 0;
+	
+	int *v = 0;
+	if ( g_vars.Get( name.data(), &v ) ) {
+		return *v;
+	}
+	printf( "\nUndefined identifier: " );
+	printf( "%s.\n", name.data() );
+	return 0;
+}
+
+#if 1
+int	Block::Evaluate( const Evaluator *p ) {
+
+	static char		count = 0;	// for doing symbol resolution
+
+	//if ( locals ) {
+	//if ( !count ) {
+	//	for each( VarDecl* decl in *locals ) {
+	//		decl->Evaluate();
+	//		decl->Print();
+	//	}
+	//	++count;
+	//}
+	//}
+
+	for each( AST_Node * n in *stmts ) {
+		n->Evaluate();
+	}
+
+// TODO: for nested blocks
+	return 0;
+}
+
+void Block::Print() const {
+	printf( "\n\t Block: locals & nested blocks:\n" );
+	
+	//if ( locals ) {
+	//for each( VarDecl* decl in *locals ) {
+	//	decl->Evaluate();
+	//	decl->Print();
+	//}
+	//}
+	printf( "\n\tStatements:\n" );
+	for each( AST_Node * n in *stmts ) {
+		n->Print();
+	}
+}
+#endif
+
+int	If_node::Evaluate( const Evaluator *p ) {
+	
+	if ( test_exp->Evaluate() ) {
+		return then_block->Evaluate();
+	}
+	else if ( else_block ) {
+		return else_block->Evaluate();
+	}
+	return 0;
+}
+
+void If_node::Print() const {
+	printf( "\n\t If_node:\n" );
+	
+	printf( "\n\t test_exp:" );
+	test_exp->Print();
+	
+	printf( "\n\t true_exp:" );
+	then_block->Print();
+
+	if ( else_block ) {
+		printf( "\n\t else_exp:\n" );
+		else_block->Print();
+	}
+}
+
+
+
+int	While_node::Evaluate( const Evaluator *p ) 
+{
+	int result = 0;
+
+	while ( test_exp->Evaluate() ) {
+		result = body->Evaluate();
+	}
+
+	return result;
+}
+
+void While_node::Print() const {
+	printf( "\n\t While_node:\n" );
+	
+	printf( "\n\t test_exp:" );
+	test_exp->Print();
+	
+	printf( "\n\t body:" );
+	body->Print();
+}
+
+
+
+int	Do_While_node::Evaluate( const Evaluator *p ) 
+{
+	int result = 0;
+
+	do {
+		result = body->Evaluate();
+	}
+	while ( test_exp->Evaluate() );
+
+	return result;
+}
+
+void Do_While_node::Print() const {
+	printf( "\n\t Do_While_node:\n" );
+
+	printf( "\n\t body:" );
+	body->Print();
+
+	printf( "\n\t test_exp:" );
+	test_exp->Print();
+}
+
+
+
+int	For_node::Evaluate( const Evaluator *p ) 
+{
+	int result = 0;
+
+	for ( init_stmt->Evaluate(); test_exp->Evaluate(); loop_stmt->Evaluate() ) {
+		result = body->Evaluate();
+	}
+
+	return result;
+}
+
+void For_node::Print() const {
+	printf( "\n\t For_node:\n" );
+	
+	printf( "\n\t init_stmt:" );
+	init_stmt->Print();
+
+	printf( "\n\t test_exp:" );
+	test_exp->Print();
+	
+	printf( "\n\t loop_stmt:" );
+	loop_stmt->Print();
+
+	printf( "\n\t body:" );
+	body->Print();
+}
+
+
+
+
+
+int	Assign_stmt::Evaluate( const Evaluator *p ) {
+	return 0;
+}
+
+void Assign_stmt::Print() const {
+	printf( "\t Assigment statement: \n" );
+	printf( "\t Left side: " );
+	printf( "\t Right side: " );
+}
+#endif
+

@@ -1,0 +1,69 @@
+	.486
+	.model	flat
+
+includelib MSVCRTD
+includelib OLDNAMES
+
+public	_main
+extrn	__imp__printf : PROC
+extrn	__imp__getchar : PROC
+extrn	__ftol2_sse : PROC
+
+_TEXT segment
+_main	proc
+push	ebp
+mov	ebp, esp
+sub	esp, 177
+push	ebx
+push	esi
+push	edi
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
+; i = cast< int >( c2 = cast< char >( uc % a + 13 * f & 1 + (~a & b | c) <= (b + 13 * 8 << 21) >>> (((298 % c) % 1) / ua) / ub ) );
+mov	eax, 298
+cdq
+idiv	dword ptr [c]
+mov	eax, edx
+mov	ecx, 1
+cdq
+idiv	ecx
+mov	eax, edx
+xor	edx, edx
+div	dword ptr [ua]
+xor	edx, edx
+div	dword ptr [ub]
+mov	ecx, eax
+mov	eax, dword ptr [b]
+mov	esi, 13
+lea	edi, [esi*8 + eax]
+shl	edi, 21
+shr	edi, cl
+mov	eax, dword ptr [a]
+and	eax, dword ptr [b]
+or	eax, dword ptr [c]
+not	eax
+inc	eax
+xor	ecx, ecx
+cmp	eax, edi
+setle	cl
+mov	eax, dword ptr [uc]
+cdq
+idiv	dword ptr [a]
+imul	eax, dword ptr [f], 13
+add	edx, eax
+and	ecx, edx
+mov	byte ptr [c2], cl
+mov	dword ptr [i], ecx
+ 
+; return 0;
+xor	eax, eax
+L0:
+pop	edi
+pop	esi
+pop	ebx
+mov	esp, ebp
+pop	ebp
+ret	0
+_main	endp
+
+_TEXT ends
+END

@@ -1,0 +1,115 @@
+	.486
+	.model	flat
+
+includelib MSVCRTD
+includelib OLDNAMES
+
+public	_main
+extrn	__imp__printf : PROC
+extrn	__imp__getchar : PROC
+extrn	__ftol2_sse : PROC
+
+_TEXT segment
+
+_main	proc
+push	ebp
+mov	ebp, esp
+sub	esp, 99
+push	ebx
+push	esi
+push	edi
+                                                                                                                                                                                                                                                                                                                                          
+; i = (~(a)) | (b * 4) % d << (l % p + (31 * c) * 88) - (!(a)) < (0 + 11) + k;
+mov	eax, dword ptr [l]
+cdq
+idiv	dword ptr [p]
+imul	eax, dword ptr [c], 31
+imul	ecx, eax, 88
+add	edx, ecx
+xor	eax, eax
+cmp	dword ptr [a], 0
+sete	al
+sub	edx, eax
+mov	ecx, edx
+mov	eax, dword ptr [b]
+shl	eax, 2
+cdq
+idiv	dword ptr [d]
+shl	edx, cl
+mov	eax, dword ptr [k]
+xor	ecx, ecx
+lea	esi, [ecx + eax + 11]
+xor	eax, eax
+cmp	edx, esi
+setl	al
+mov	ecx, dword ptr [a]
+not	ecx
+or	eax, ecx
+mov	dword ptr [i], eax
+                                                                                                                                                                                                
+; i = (i / (((b - 1) + b * 8) + c * d)) / (e + f);
+mov	eax, dword ptr [b]
+mov	ecx, dword ptr [b]
+lea	esi, [ecx + eax*8 - 1]
+mov	eax, dword ptr [c]
+imul	eax, dword ptr [d]
+add	esi, eax
+mov	eax, dword ptr [i]
+cdq
+idiv	esi
+mov	ecx, dword ptr [e]
+add	ecx, dword ptr [f]
+cdq
+idiv	ecx
+mov	dword ptr [i], eax
+                                                                            
+; c3 = cast< char >( (a == d) % 3 == 1 );
+mov	eax, dword ptr [a]
+xor	ecx, ecx
+cmp	eax, dword ptr [d]
+sete	cl
+mov	eax, ecx
+mov	ecx, 3
+cdq
+idiv	ecx
+xor	eax, eax
+cmp	edx, 1
+sete	al
+mov	byte ptr [c3], al
+                                                                                                             
+; i = (a / c) / (!(b % 3));
+mov	eax, dword ptr [b]
+mov	ecx, 3
+cdq
+idiv	ecx
+xor	eax, eax
+cmp	edx, 0
+sete	al
+mov	ecx, eax
+mov	eax, dword ptr [a]
+cdq
+idiv	dword ptr [c]
+cdq
+idiv	ecx
+mov	dword ptr [i], eax
+                                                               
+; i = (a < d) * 7 > 1;
+mov	eax, dword ptr [a]
+xor	ecx, ecx
+cmp	eax, dword ptr [d]
+setl	cl
+imul	eax, ecx, 7
+xor	ecx, ecx
+cmp	eax, 1
+setg	cl
+mov	dword ptr [i], ecx
+pop	edi
+pop	esi
+pop	ebx
+mov	esp, ebp
+pop	ebp
+ret	0
+_main	endp
+
+_TEXT ends
+END

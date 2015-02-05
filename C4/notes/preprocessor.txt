@@ -1,0 +1,14 @@
+-- Should macros behave like functions? No doubt they MUST be local.
+Global macros start with #define:
+
+#define GLOBAL_DEFINE( params )		((params)/2<<3)
+
+type Foo [
+	// ...
+#macro DOWORK( x, y )	((x) + (y)/2)	// this macro is local to the type Foo
+	// ...
+]
+
+int z = DOWORK( 2, 7 );  // error: unknown identifier 'DOWORK'.
+
+-- add ability to convert some character to uppercase / lowercase, remove chars at specified positions, etc..

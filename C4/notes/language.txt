@@ -1,0 +1,184 @@
+03.11.2008
+==============
+-- example:
+	enum OPCODES {
+		ASSIGN,
+		ADD,
+		SUB,
+		MUL,
+		// ...
+	};
+
+void PrintOpcode( OPCODES op ) {
+	console.Printf( op._text );
+}
+
+( like in C# ) 
+
+29.07.2008.
+==============
+-- idea:
+
+	X [ ind ]
+	X | ind |
+	
+	this| expr |
+	
+	absolute value:  |-5| is 5
+	
+	operator | this |
+	operator | int i |
+
+27.07.2008.
+==============
+-- compiler should be able to answer the question:
+"Have certain files have been included?"
+
+( When using MFC, one should include PCH file "stdafx.h" )
+
+
+23.07.2008
+==============
+-- idea: make static statements that may be executed outside any functions:
+
+	int[3]  g_var;  // this is a global variable
+	static g_var[0] = 3;
+	static g_var[1] = 2;
+	static g_var[2] = 1;
+
+	or
+	
+	static {
+		for ( int i = 2; i >= 0; i-- )
+		{
+			g_Var[i] = 3 - i;
+		}
+	}
+
+
+09.07.2008.
+==============
+-- 'in' has a lower precedence than '?:'.
+   'is' and 'as' have the same prec as "E -> E [ e1 ]".
+
+04.07.2008.
+-- The user of the language must be able
+	to change access level to the base class's fields
+	from derived classes.
+
+03.07.2008.
+-- "static if" can be defined outside any functions, statements, etc., like #if.
+ ( In this case the condition must be a compile-time constant. )
+ For example:
+
+//
+// global scope
+//
+const bool debugMode = false;
+
+static if ( debugMode ) {
+	
+	class Foo [
+	// ...
+	]
+	
+}
+
+--- new feature:
+	default initializers:
+		void	Init( const char* msg != 0 )
+	
+		will generate assertion ( msg != 0 ).
+
+
+
+25.06.2008.
+-- new feature:
+	derived class can hide base class's member:
+
+	( final methods cannot be overriden )
+
+	type List< T > {
+		void	Append( const T & element )
+		{
+		// ...
+	}
+	
+	type TokenList : List {
+	// ...
+		void	Append( Token * token )	// in this function, token's prev and next pointers should be set.
+		// ...
+	
+	private:
+		sealed final void List.Append( const T& );	// nobody can call or inherit "void Append( const Token & );"
+	}
+
+
+24.06.2008.
+-- Unambiguous LL(1) grammar is written.
+
+Examples:
+	var SomeType.MemberType  i;
+	var int	a;
+	var ^int	p = @a;
+	var ^^int	pp = @p;	// pointer to a pointer to int
+
+	pp^^ = 7;	// now a is 7
+
+	type TNewType = ^^^int;  // TNewType is a ptr to a ptr to a ptr to int
+
+The 'typedef' keyword is no longer needed.
+
+( First wanted to make pointers look like '^' or '<' :
+	int^ p;
+	int < p;
+)
+
+
+//--------------------------------------------------------------------------------------------------------------
+21.06.2008
+
+-- '^' is replaced by "xor"
+-- address taking now has two forms, for example, p = &i or p = @i ;
+   pointer dereferencing: *p = 3 or p^ = 3.
+
+//--------------------------------------------------------------------------------------------------------------
+
+1) class members should always begin with '.' or something.
+2) global scope will be accessible through "::".
+
+the reason why instantiating some class failed ( because the programmer has not 
+implemented some pure virtual functions ) will always be explained
+and those methods will be shown.
+
+--- add object test bench
+--- maybe, add posibility to force a derived class to implement certain methods, for example:
+
+	class Interface [
+	public:
+		virtual Interface() {}
+
+	virtual void Action() = 0;
+	
+	]
+
+	class Derived1 : Interface [
+	public:
+		this() {}
+		~this() {}
+
+	override void Action() {}
+		
+	]
+
+	class Derived2 : Inteface [
+	public:
+		this() {}
+		~this() {}
+
+	override abstract void Action();	 // classes, derived from this class, must implement Action() to be instantiated and this class becomes abstract
+	]
+
+--- add ability to insert TODOs, UNDONEs, etc., 
+	and look them up as needed.
+	

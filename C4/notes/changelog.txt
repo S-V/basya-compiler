@@ -1,0 +1,566 @@
+=========================================================================================
+04.01.2009
+-- added 'float' and 'double', added 'and', 'xor', etc..
+TODO: double and string constants in CONST segment
+
+BUG: parser goes into an infinite loop when confronted with the following:
+	double d1, d2, d3;
+;;fa [[
+	a = d3;
+
+=========================================================================================
+03.01.2009
+-- added 'int' and 'char' types ( both 'signed' and 'unsigned' )
+  ( what would be 'long long int' ? )
+
+=========================================================================================
+30.12.2008
+-- instruction patterns can not have constructors
+-- integer arithmetic is nearly complete
+-- in some cases my tiny toy compiler generates code better
+	than that produced by MVC ( without optimization ).
+	MVC always evaluates expressions from left to right
+	while my compiler emits the most complex expression
+	( which requires the largest number of registers ) first.
+
+=========================================================================================
+22.12.2008
+
+TODO: create two code generators: a primitive on-the-fly code generator and an optimizing one.
+
+Should the array of instruction data contain assembler templates and other string info ?
+
+=========================================================================================
+13.12.2008
+
+Devised a new format of instruction patterns.
+( Almost no work has been done recently.
+Much time is lost due to the university. )
+
+=========================================================================================
+22.11.2008
+
+Is 'const' a storage class or a type modifier?
+	? SC_CONST ?
+	? MOD_CONST ?
+
+=========================================================================================
+11.11.2008
+
+- Feeling overwelmed after looking at GCC and LLVM. 
+
+- I've encountered some problems with iburg
+
+	[ div : EAX
+		( register EAX:EDX )
+		( divisor )			// divisor : mr
+		"idiv %1\n"
+		// ....
+	
+	Given the expression "a = 7 / (a / b)" it will generate the following terrible code:
+
+	mov	eax, 7		; _eax : iconst ...
+	cdq			; _eax_edx : eax "cdq\n" ...
+	mov	ecx, eax
+	mov	eax, dword ptr [a]	; _eax: mem ...
+	cdq
+	idiv	dword ptr [b]	; _eax: div( _eax_edx, divisor )
+	mov	esi, eax		; esi = a / b
+	mov	eax, ecx		; eax = 7
+	cdq
+	idiv	esi		; eax = 7 / (a / b)
+	mov	dword ptr [a], eax	; a = 7 / (a / b)
+)
+
+=========================================================================================
+26.10.2008
+
+- UNDONE: assembler templates in the grammar description are not used yet. Only semantic
+ actions are executed.
+
+=========================================================================================
+21.10.2008
+
+- haven't written any entries for the last couple of months because of high academic load at the university;
+  idea: make use of some simple kind of iburg code generator generator.
+
+=========================================================================================
+19.08.2008
+
+- abandoned the idea of quadruples. Returning back to trees...
+
+=========================================================================================
+18.08.2008
+
+- BUG FIXES:
+			Div_MEM_IMM
+			Div_MEM_MEM
+			
+			Div_REG_MEM ?
+			
+			
+			Mod_IMM_MEM
+			Mod_REG_IMM ?
+
+=========================================================================================
+16.08.2008
+
+- an example of generated code ( the comments are hand-written ):
+
+; 
+; a = 3 + e / 5 * c * h - h * b * a + 56 / ( e / 7 * c * 77 / h );
+mov		eax, dword ptr [e]
+cdq
+mov		ecx, 7
+idiv	ecx
+imul	eax, dword ptr [c]
+imul	eax, eax, 77
+cdq
+idiv	dword ptr [h]
+
+mov		ecx, eax				; ecx = e/7 * c * 77/h
+
+mov		eax, 56
+cdq
+idiv	ecx						; eax = 56 / (e/7 * c * 77/h)
+
+mov		ecx, dword ptr [h]
+imul	ecx, dword ptr [b]
+imul	ecx, dword ptr [a]		; ecx = h*b*a
+
+mov		edx, eax				; edx = 56 / (e/7 * c * 77/h)
+
+mov		eax, dword ptr [e]
+cdq
+mov		esi, 5
+idiv	esi
+imul	eax, dword ptr [c]
+imul	eax, dword ptr [h]
+add		eax, 3					; eax = e/5 * c*h + 3
+
+sub		eax, ecx				; eax = (e/5 * c*h + 3) - h*b*a
+add		eax, edx				; eax = (e/5 * c*h + 3) - h*b*a + 56 / (e/7 * c * 77/h)
+
+mov		dword ptr [a], eax
+
+//------------------------------------------------------------------
+
+; 
+; a = 3 + e / 5 * c * h - h * b * a + 56 / ( e / 7 * c * 77 / h );
+[ '/',	 e,		 7,		 $1 ]
+[ '*',	 $1,		 c,		 $2 ]
+[ '*',	 $2,		 77,		 $3 ]
+[ '/',	 $3,		 h,		 $4 ]
+[ '/',	 56,		 $4,		 $5 ]
+[ '*',	 h,		 b,		 $6 ]
+[ '*',	 $6,		 a,		 $7 ]
+[ '/',	 e,		 5,		 $8 ]
+[ '*',	 $8,		 c,		 $9 ]
+[ '*',	 $9,		 h,		 $10 ]
+[ '+',	 3,		 $10,		 $11 ]
+[ '-',	 $11,		 $7,		 $12 ]
+[ '+',	 $12,		 $5,		 $13 ]
+[ '=',	 a,		 $13,		 $14 ]
+mov		eax, dword ptr [e]
+cdq
+mov		edx, 7
+idiv	edx
+imul	eax, dword ptr [c]
+imul	eax, eax, 77
+cdq
+idiv	dword ptr [h]
+mov		edx, eax		; edx = ( e / 7 * c * 77 / h )
+
+mov		eax, 56
+cdq
+idiv	edx			; eax = 56 / ( e / 7 * c * 77 / h )
+
+mov		edx, dword ptr [h]
+imul	edx, dword ptr [b]
+imul	edx, dword ptr [a]	; edx = h * b * a
+
+mov		esi, eax	; esi = 56 / ( e / 7 * c * 77 / h )
+
+mov		eax, dword ptr [e]
+cdq
+mov		edi, 5
+idiv	edi
+imul	eax, dword ptr [c]
+imul	eax, dword ptr [h]	; eax = e / 5 * c * h
+
+add		eax, 3		; eax = 3 + e/5 * c * h
+sub		eax, edx	; eax = 3 + e/5 * c * h - h * b * a
+add		eax, esi	; eax = 3 + e/5 * c * h - h * b * a + 56 / ( e / 7 * c * 77 / h )
+
+mov		dword ptr [a], eax
+
+//------------------------------------------------------------------
+
+=========================================================================================
+15.08.2008
+
+- code generator for x86 has become very clumsy;
+  the decision to write less general, but more specific
+  functions is taken.
+
+=========================================================================================
+01.08.2008
+
+-- TODO: tranform multiplication and division by a power of two
+into shifts when appropriate.
+
+=========================================================================================
+30.07.2008
+
+-- implement "Clone" or "Copy" for all unary and binary expressions as well.
+
+DONE:
+-- re-write the visitor ( don't use the same name 'Visit', use, for example, "Visit_If_Statement" instead ).
+
+-- ASTVisitor is replaced with ITreeVisitor.
+
+=========================================================================================
+Tuesday, July 29, 2008
+( 29.07.2008 )
+
+-- TODO: types MUST NOT be display in the same tree view 
+as the one used for ASTs, because singleton types ( for example, 'int', 'pointer' )
+don't have a fixed UI parent node.
+
+-- TODO: Expression * Clone() const;
+
+-- TODO: change
+	Expression * BinaryExpression::CombineType( Semantics* semantics );
+	
+		to
+	
+	void BinaryExpression::BringLeavesToCommonType();
+	
+-- TODO: make 'mType' protected 'm_type'.	
+
+-- idea: implicit_conversion_table should store pointers to types
+instead of type codes.
+
+-- DONE: now Type inherits ASTNode.
+	
+=========================================================================================
+Sunday, July 27, 2008
+( 27.07.2008 )
+
+-- assembly listings should be created in the same directory as the corresponding source files.
+
+-- idea:
+	add the following methods to ICompiler:
+	
+	virtual void	SetMaxErrorCount() = 0;
+	virtual void	SetMaxNumWarnings() = 0;
+
+( the compiler will stop execution if its error count exceeds some critical value. )
+
+=========================================================================================
+Thursday, July 24, 2008
+
+	renamed IConsole to ICommon and c4::console to c4::common, because they handle not only message reporting,
+	but can also abort the program execution in case of critical errors.
+
+=========================================================================================
+Monday, July 21, 2008
+( 21.07.2008 )
+-- changed names of many enum constants that were conflicting with macros used in MFC.
+Began writing code for working with intermediate representation.
+
+=========================================================================================
+10.07.2008.
+   TODO: new interface for drawing flow charts.
+   Currently, drawing flow charts requires tight coupling between the rendering code 
+   and C4 ast classes.
+   
+   TODO: special string class which returns its size
+   ( so that all of the text can fit into the flow chart element ).
+
+=========================================================================================
+09.07.2008.
+-- the code is quite a mess; some semantic methods return new ast nodes,
+some just return 'this', while other return the NULL pointer.
+-- Parser::ParseAggregateBody() should accept some sort of flag to change its behaviour
+( not all declarations are valid enum members ).
+-- bad design: if a new token is added, at least 3 files must be changed:
+ Token.cpp, Lexer.cpp and SyntaxHighlighter.cpp.
+=========================================================================================
+08.07.2008.
+
+-- TODO: place implementations of certain functions ( UI, semantics, accepting the visitor, etc. )
+	into several separate files.
+	( File 'UI.cpp', 'Semantics.cpp', 'Codegen.cpp', etc. )
+
+-- Should "ArgumentList" inherit from "Declaration"? ( some fields remain unused. )
+
+=========================================================================================
+06.07.2008.
+-- made "ICompiler * compiler" a global.
+   IDEA: remove "IConsole * console" and leave the compiler alone.
+
+-- switching to the Visitor design pattern
+	( parse trees will be used for many tasks ).
+	Semantic analysis will be done inside ast nodes,
+	while code generation will be done with a class,
+	implementing some visitor interface.
+	
+=========================================================================================
+05.07.2008.
+-- DONE: no memory leaks, all Objects are reference-counted,
+  an object with 0 references can be deleted.
+-- DONE: parsing namespaces.
+
+-- TODO: debugger will be able to step back.
+
+-- BUG: Type_Errors are not deleted!
+-- BUG: some members of the For-Statement
+	may be null ( for instance, "for (;;);" ),
+	which may be incorrecltly represented by UI
+	( the program will crash if the user clicks upon the null node ).
+	TODO: initialize empty nodes to default values or returns some
+	reserved UINodes with appropriate text strings.
+
+// TODO:
+
+Parser::Expect( int tokenType ) {
+	//TODO:
+	switch ( tokenType ) {
+	
+		case P_LEFT_BRACE:
+			++m_braceCount;
+			break;
+			
+			// ...
+	}
+
+}
+=========================================================================================
+03.07.2008.
+
+TODO:
+--- remove GlobalVarDecls. Function arguments are much like variable declarations,
+moreover, they behave so during semantic resolution. Both Argument and VarDecl should inherit
+from Declaration.
+
+--- uint	Compiler::m_errorLimit;
+     int32	Compiler::m_compileFlags;
+
+	Right from the book:
+
+template <class T> struct EnsureNotNull 
+{ 
+   static void Check(T*& ptr) 
+   { 
+      if (!ptr) ptr = GetDefaultValue(); 
+   } 
+}; 
+
+SmartPtr uses the Checking policy this way: 
+
+template 
+< 
+   class T, 
+   template <class> class CheckingPolicy, 
+   template <class> class ThreadingModel 
+> 
+class SmartPtr 
+   : public CheckingPolicy<T> 
+   , public ThreadingModel<SmartPtr> 
+{ 
+   ... 
+   T* operator->() 
+   { 
+      typename ThreadingModel<SmartPtr>::Lock guard(*this); 
+      CheckingPolicy<T>::Check(pointee_); 
+      return pointee_; 
+   } 
+private: 
+   T* pointee_; 
+}; 
+
+
+=========================================================================================
+02.07.2008.
+	There must only be interfaces and headers in the folder "C4/include";
+	all the implementation details should be hidden as far as possible.
+
+	Severe problems with dynamic memory management.
+	Almost no progress during the last couple of days.
+	Ideas:
+		Make a smart pointer class, overload new and delete, overload -> and * for objects, etc..
+
+	We need a list of pointers!
+	Name this class "List".
+
+// TODO: the class AST_Node should inherit from UITreeNode to be able to draw itself in a tree view.
+//	Some declarations may be not exactly ast nodes.
+
+	Parser::SetLocation() should be removed.
+	Locations will be passed as constructors' parameters.
+
+Idea:
+--- Do-While isn't necessary, it may even cause subtle problems.
+	Maybe, the Do-While statements will be removed.
+
+=========================================================================================
+01.07.2008.
+	Ideas:
+		Objects are linked :
+		
+			each object carries a list node with the links to the next and previous elements
+			
+	Object:
+		private:
+			list_node_s		m_listNode;
+			
+			struct list_node_s {
+				list_node_s * next, *prev;
+			};
+
+			static list_node_s *	m_head;
+			
+			
+	Destructors should be private.
+	All objects should be deleted via the functions Delete():
+	
+	
+	public:
+		static void		Delete( Object *& p ) {
+			p = p->DeleteThis();
+		}
+		
+	public:
+		virtual Object * DeleteThis() {
+			if ( this->MayBeDeleted() ) {
+				delete this;
+				return p_defaultObject;
+			}
+			return this;
+		}
+		
+	Examples:
+		Object* Identifier::DeleteThis() {
+			delete this;
+			return ::Null_Identifier;
+		}
+		
+	Each object should provide reference counting through the methods Grab() and Drop().
+		
+				
+
+=========================================================================================
+30.06.2008.
+
+New design:
+------------
+	Expression * ParseExpression( bool expectExpression = false )
+------------
+will return NULL in case of failure, if expectExpression == false,
+and will issue error and return default ( error-indicating ) expression,
+if expectExpression == true.
+
+------------
+	Type * ParseType( bool expectType = false )
+------------
+behaves in the same manner.
+
+------------
+	Statement *		ParseStatement( PARSE_FLAGS flags );
+------------
+may also return NULL if no statements were parsed and the corresponding bit in flags is set.
+
+enum PARSE_FLAGS {
+	EXPECT			= BIT( 0 ),
+	EXPECT_BLOCK	= BIT( 1 ),		// '{' is expected
+	EXPECT_DECLARATION = BIT( 2 ),	// var. decl. is expected
+};
+
+---------------------------------------------
+Ideas:
+--- All types except 'void', 'bool', 'char' and 'string' are parsed as identifiers
+	and resolved during semantic analysis.
+	
+New:
+--- Parser::ParseStatement() has been simplified significantly.
+
+=========================================================================================
+29.06.2008.
+
+LALR(1) cannot determine whether it's an expr. or a type:
+
+	X.x		var;
+	
+	Maybe, this disambiguation will be done during semantic analysis,
+	while the parse tree will store pointers to so-called expression types --
+	-- expressions that should be resolved into types
+	
+---------------------------------------------
+
+--- Make a class TypeExpression for expr. that are to be resolved to types ( in declarations )
+--- Add ability to add user warnings
+
+---------------------------------------------
+
+ Make a button called, say, "Run IntelliSense",
+ which will launch the IntelliSense.
+
+ Warn about such things:
+	LabeledStatement * s = new LabeledStatement( s );
+
+---------------------------------------------
+
+25.06.2008.
+--- Lexer builds a list of tokens.
+
+23.06.2008.
+--- ability to add arbitrary words to the list of autocompletion ( Ctrl + Space, Ctrl + J, Alt + RightArrow, etc. ).
+
+21.06.2008.
+TODO:
+--- ability to launch other programs ( processes ) from IDE.
+	( like 'F6' in Notepad++ ).
+	
+--- bookmarks will be named automatically, their names will be meaningfull, not just "Bookmark1", "Bookmark2", ... .	
+
+--- if not all members of a class are initialized in the constructor of this class, the compiler should issue a warning.
+--- various debug switches.
+
+20.06.2008.
+--- The process of building a program should be interactive, 
+	i.e. programs will be built and debugged most of the time on the fly,
+	modules, objects and functions maybe be tested in a separate window
+	and test suites will be created	automatically. Heavy use of unittests is encouraged.
+	When no significant bugs is found, release build is done and we get the finished product.
+	
+
+---	Make 3 parsers : a handcrafted version ( recursive-descent ),
+	another version using Lemon, and Bison-generated parser.
+
+	
+18.06.2008.
+
+Ideas:
+--- output:
+	1) .asm ( x86, both 16 and 32-bit ) or C4 VM bytecodes
+	2) C/C++ source translated from C4 code
+	3) JVM bytecodes
+	4) info about the program: types, classes, functions, who is called by whom, recursion, flow-charts, etc..
+	
+	Add ability to view the results of the last compilation.
+	
+	
+--- warnings:
+	1) common warnings
+	2) programming style		
+	3) performance
+		
+17.06.2008.
+--- Parser should inherit from Lexer the following functions:
+	
+	ExpectToken
+	ExpectTokenString
+	EnsureRead
+	
+	...

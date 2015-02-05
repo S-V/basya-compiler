@@ -1,0 +1,66 @@
+	int a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q;
+	unsigned int  ua, ub, uc;
+	char  c1, c2, c3;
+	unsigned char c4;
+	int i1, i2, i3;
+	unsigned long int l1, l2, l3;
+	long int ll; // long long int ll;
+	float f1, f2, f3, f4;
+	double d1, d2, d3;
+	short s1, s2, s3;
+	unsigned short us1, us2, us3;
+	
+	//bool b1, b2, b3;
+
+	i = c = a << 4 & 5 - d % e * 8 * b + 43 |(b%d/3);
+
+//==----------------------------------------------------------==//
+MVC:
+ 8B 4D FC         mov         ecx,dword ptr [a] 
+ C1 E1 04         shl         ecx,4 
+ 8B 45 F0         mov         eax,dword ptr [d] 
+ 99               cdq              
+ F7 7D EC         idiv        eax,dword ptr [e] 
+ C1 E2 03         shl         edx,3 
+ 0F AF 55 F8      imul        edx,dword ptr [b] 
+ B8 05 00 00 00   mov         eax,5 
+ 2B C2            sub         eax,edx 
+ 83 C0 2B         add         eax,2Bh 
+ 23 C8            and         ecx,eax 
+ 8B 45 F8         mov         eax,dword ptr [b] 
+ 99               cdq              
+ F7 7D F0         idiv        eax,dword ptr [d] 
+ 8B C2            mov         eax,edx 
+ 99               cdq              
+ BE 03 00 00 00   mov         esi,3 
+ F7 FE            idiv        eax,esi 
+ 0B C8            or          ecx,eax 
+ 89 4D F4         mov         dword ptr [c],ecx 
+ 8B 4D F4         mov         ecx,dword ptr [c] 
+ 89 4D B8         mov         dword ptr [i2],ecx 
+	( 22 )
+//==----------------------------------------------------------==//
+C4:
+		mov     eax, dword ptr [d]
+		cdq
+		idiv    dword ptr [e]
+		shl     edx, 3
+		imul    edx, dword ptr [b]
+		mov     eax, 5
+		sub     eax, edx
+		add     eax, 43
+		mov     ecx, dword ptr [a]
+		shl     ecx, 4
+		and     eax, ecx		; <= it's better to use 'and ecx, eax'
+		mov     ecx, eax		; <= and this line becomes unnecessary
+		mov     eax, dword ptr [b]
+		cdq
+		idiv    dword ptr [d]
+		mov     eax, edx
+		mov     esi, 3
+		cdq
+		idiv    esi
+		or      ecx, eax
+		mov     dword ptr [c], ecx
+		mov     dword ptr [i], ecx
+	(22)		
